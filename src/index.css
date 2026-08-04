@@ -17,6 +17,7 @@ body {
   background: #f8fafc;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Subtle scrollbar */
@@ -33,101 +34,218 @@ body {
   border-radius: 999px;
 }
 
-/* Prose styling for rendered markdown blocks */
+/* ============================================================
+   Prose — rendered markdown blocks (.prose-lb)
+   Unlayered rules win over Tailwind utilities, so these are
+   authoritative for article typography.
+   ============================================================ */
+.prose-lb {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  color: #334155;
+  font-size: 1.0625rem;
+}
+.prose-lb > p:first-child,
+.prose-lb > h1:first-child,
+.prose-lb > h2:first-child,
+.prose-lb > h3:first-child {
+  margin-top: 0;
+}
 .prose-lb p {
-  margin: 0.6em 0;
-  line-height: 1.75;
+  margin: 1.15em 0;
+  line-height: 1.8;
 }
 .prose-lb h1 {
   font-size: 1.75rem;
   font-weight: 700;
-  margin: 1.2em 0 0.5em;
+  margin: 1.4em 0 0.5em;
   line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: #0f172a;
 }
 .prose-lb h2 {
   font-size: 1.4rem;
   font-weight: 700;
-  margin: 1.1em 0 0.4em;
+  margin: 1.6em 0 0.5em;
   line-height: 1.3;
+  letter-spacing: -0.018em;
+  color: #0f172a;
 }
 .prose-lb h3 {
   font-size: 1.15rem;
   font-weight: 600;
-  margin: 1em 0 0.35em;
+  margin: 1.3em 0 0.4em;
+  letter-spacing: -0.01em;
+  color: #0f172a;
 }
 .prose-lb ul {
   list-style: disc;
-  padding-left: 1.4em;
-  margin: 0.6em 0;
+  padding-left: 1.5em;
+  margin: 1em 0;
 }
 .prose-lb ol {
   list-style: decimal;
-  padding-left: 1.4em;
-  margin: 0.6em 0;
+  padding-left: 1.5em;
+  margin: 1em 0;
 }
 .prose-lb li {
-  margin: 0.25em 0;
-  line-height: 1.7;
+  margin: 0.35em 0;
+  line-height: 1.75;
+}
+.prose-lb li::marker {
+  color: #94a3b8;
 }
 .prose-lb code {
   background: #eef2ff;
   color: #4338ca;
   padding: 0.12em 0.4em;
   border-radius: 0.35em;
-  font-size: 0.9em;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-.prose-lb pre {
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 0.9em 1.1em;
-  border-radius: 0.6em;
-  overflow-x: auto;
-  margin: 0.8em 0;
   font-size: 0.88em;
-  line-height: 1.6;
-}
-.prose-lb pre code {
-  background: transparent;
-  color: inherit;
-  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .prose-lb a {
   color: #4f46e5;
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s;
+}
+.prose-lb a:hover {
+  color: #4338ca;
 }
 .prose-lb blockquote {
-  border-left: 3px solid #c7d2fe;
-  padding-left: 0.9em;
+  border-left: 3px solid #a5b4fc;
+  padding: 0.2em 0 0.2em 1em;
   color: #475569;
-  margin: 0.8em 0;
+  margin: 1.4em 0;
+  font-style: italic;
 }
 .prose-lb strong {
-  font-weight: 600;
+  font-weight: 650;
+  color: #1e293b;
 }
 .prose-lb hr {
   border: none;
   border-top: 1px solid #e2e8f0;
+  margin: 2.2em 0;
+}
+
+/* ============================================================
+   Code card — fenced code blocks with editor chrome
+   ============================================================ */
+.prose-lb .code-card {
   margin: 1.4em 0;
+  border-radius: 0.7em;
+  overflow: hidden;
+  border: 1px solid #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
-.prose-lb .math-block {
-  margin: 1em 0;
-  padding: 0.9em 1.1em;
-  background: #f8fafc;
-  border-left: 3px solid #818cf8;
-  border-radius: 0.4em;
+.prose-lb .code-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #0b1220;
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.prose-lb .code-head .dots {
+  display: inline-flex;
+}
+.prose-lb .code-head .dots i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+.prose-lb .code-head .dots i:nth-child(1) {
+  background: #ff5f56;
+}
+.prose-lb .code-head .dots i:nth-child(2) {
+  background: #ffbd2e;
+}
+.prose-lb .code-head .dots i:nth-child(3) {
+  background: #27c93f;
+}
+.prose-lb .code-lang {
+  color: #94a3b8;
+  font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.prose-lb .code-copy {
+  margin-left: auto;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.35em;
+  font-size: 11px;
+  padding: 0.15em 0.55em;
+  cursor: pointer;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.92em;
-  color: #334155;
+  transition: color 0.15s, border-color 0.15s;
+}
+.prose-lb .code-copy:hover {
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.prose-lb pre {
+  background: #0b1220;
+  color: #e2e8f0;
+  padding: 0.95em 1.1em;
   overflow-x: auto;
-  white-space: pre-wrap;
-}
-.prose-lb .math-inline {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.65;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.92em;
-  color: #4338ca;
-  background: #eef2ff;
+}
+.prose-lb pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Syntax token palette (dark card) */
+.prose-lb .tok-keyword {
+  color: #c792ea;
+}
+.prose-lb .tok-string {
+  color: #c3e88d;
+}
+.prose-lb .tok-comment {
+  color: #637777;
+  font-style: italic;
+}
+.prose-lb .tok-number {
+  color: #f78c6c;
+}
+.prose-lb .tok-function {
+  color: #82aaff;
+}
+.prose-lb .tok-punct {
+  color: #89ddff;
+}
+
+/* ============================================================
+   Math — KaTeX
+   ============================================================ */
+.prose-lb .math-block {
+  margin: 1.4em 0;
+  padding: 0.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.prose-lb .math-block .katex-display {
+  margin: 0;
+}
+.prose-lb .katex {
+  font-size: 1.05em;
+}
+.prose-lb .math-error {
+  color: #dc2626;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: #fef2f2;
   padding: 0.05em 0.35em;
   border-radius: 0.3em;
 }

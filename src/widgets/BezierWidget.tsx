@@ -120,7 +120,7 @@ export function Bezier({ props }: { props: BezierProps }) {
   const ctrlPath = `M ${p0.x} ${p0.y} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y}`
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}

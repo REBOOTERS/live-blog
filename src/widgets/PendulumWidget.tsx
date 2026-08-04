@@ -156,7 +156,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
   })
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <canvas
         ref={canvasRef}
         onPointerDown={onPointerDown}

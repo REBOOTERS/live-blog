@@ -5,14 +5,24 @@ import type { WidgetDefinition } from './registry'
 interface ProjectileProps {
   gravity: number // m/s^2
   showVelocity: boolean
-  airDrag: number // 0..0.2 per second coefficient
+  airDrag: number // per-second coefficient applied to velocity
   trail: boolean
 }
 
 const W = 480
 const H = 320
-const ORIGIN = { x: 60, y: H - 40 }
-const SCALE = 3 // pixels per meter
+const ORIGIN = { x: 60, y: H - 40 } // launch point, bottom-left
+const SCALE = 4 // pixels per meter
+// V_MAX chosen so a 45° max-power shot (range = v²/g = 32²/9.8 ≈ 104 m) lands at
+// ~416 px — right at the 420 px usable width — and a steep shot's apex (~52 m)
+// fits the ~260 px usable height.
+const V_MAX = 32
+const PREDICT_DT = 1 / 120
+
+interface Pt {
+  x: number
+  y: number
+}
 
 interface State {
   x: number
@@ -20,25 +30,37 @@ interface State {
   vx: number
   vy: number
   flying: boolean
-  trail: { x: number; y: number }[]
+  trail: Pt[]
+  t: number
+  maxH: number
+  landed: boolean
+  range: number
+  flightTime: number
+}
+
+const IDLE: State = {
+  x: 0,
+  y: 0,
+  vx: 0,
+  vy: 0,
+  flying: false,
+  trail: [],
+  t: 0,
+  maxH: 0,
+  landed: false,
+  range: 0,
+  flightTime: 0,
 }
 
 export function Projectile({ props }: { props: ProjectileProps }) {
   const { gravity, showVelocity, airDrag, trail } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const draggingRef = useRef(false)
-  const aimRef = useRef<{ dx: number; dy: number } | null>(null)
+  const aimRef = useRef<{ vx: number; vy: number; speed: number } | null>(null)
   const propsRef = useRef({ gravity, showVelocity, airDrag, trail })
   propsRef.current = { gravity, showVelocity, airDrag, trail }
 
-  const stateRef = useRef<State>({
-    x: 0,
-    y: 0,
-    vx: 0,
-    vy: 0,
-    flying: false,
-    trail: [],
-  })
+  const stateRef = useRef<State>({ ...IDLE })
   const [, force] = useState(0)
 
   useAnimationFrame((dt) => {
@@ -51,15 +73,20 @@ export function Projectile({ props }: { props: ProjectileProps }) {
       s.vy *= 1 - d * dt
       s.x += s.vx * dt
       s.y += s.vy * dt
+      s.t += dt
+      if (s.y > s.maxH) s.maxH = s.y
       if (s.y <= 0 && s.vy < 0) {
         s.y = 0
         s.flying = false
+        s.landed = true
+        s.range = s.x
+        s.flightTime = s.t
       }
       if (showTrail) s.trail.push({ x: s.x, y: s.y })
-      if (s.trail.length > 400) s.trail.shift()
+      if (s.trail.length > 600) s.trail.shift()
       needsRedraw = true
     }
-    if (draggingRef.current) needsRedraw = true
+    if (draggingRef.current) needsRedraw = true // keep redrawing while aiming
     if (needsRedraw) force((n) => (n + 1) % 1_000_000)
   })
 
@@ -68,10 +95,20 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     const r = canvas.getBoundingClientRect()
     const px = ((e.clientX - r.left) / r.width) * W
     const py = ((e.clientY - r.top) / r.height) * H
-    // slingshot: drag backwards from origin
-    const dx = (ORIGIN.x - px) / SCALE
-    const dy = (py - ORIGIN.y) / SCALE // screen y down; world y up = -dy
-    aimRef.current = { dx: clamp(dx, -2, 40), dy: clamp(-dy, -5, 40) }
+    const wx = (px - ORIGIN.x) / SCALE // meters, +right
+    const wy = (ORIGIN.y - py) / SCALE // meters, +up
+    if (wy <= 0) {
+      aimRef.current = null // refuse aiming at/below ground
+      return
+    }
+    let vx = wx
+    let vy = wy
+    const sp = Math.hypot(vx, vy)
+    if (sp > V_MAX) {
+      vx = (vx / sp) * V_MAX
+      vy = (vy / sp) * V_MAX
+    }
+    aimRef.current = { vx, vy, speed: Math.min(sp, V_MAX) }
   }
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -79,40 +116,36 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     draggingRef.current = true
     e.currentTarget.setPointerCapture(e.pointerId)
     aimFromEvent(e)
+    force((n) => n + 1)
   }
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!draggingRef.current) return
     aimFromEvent(e)
+    force((n) => n + 1)
   }
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!draggingRef.current) return
     draggingRef.current = false
     e.currentTarget.releasePointerCapture(e.pointerId)
     const a = aimRef.current
-    aimRef.current = null
-    if (a) {
-      const speed = Math.hypot(a.dx, a.dy)
-      if (speed > 2) {
-        stateRef.current = {
-          x: 0,
-          y: 0,
-          vx: a.dx,
-          vy: a.dy,
-          flying: true,
-          trail: [],
-        }
+    if (a && a.speed > 1) {
+      stateRef.current = {
+        ...IDLE,
+        vx: a.vx,
+        vy: a.vy,
+        flying: true,
       }
     }
+    aimRef.current = null
   }
 
   const reset = () => {
-    stateRef.current = { x: 0, y: 0, vx: 0, vy: 0, flying: false, trail: [] }
+    stateRef.current = { ...IDLE }
     aimRef.current = null
     draggingRef.current = false
     force((n) => n + 1)
   }
 
-  // render
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -125,20 +158,21 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
-    const { showVelocity, trail: showTrail } = propsRef.current
+
+    const { showVelocity, trail: showTrail, gravity: g, airDrag: d } = propsRef.current
 
     // ground
     ctx.fillStyle = '#f1f5f9'
     ctx.fillRect(0, ORIGIN.y, W, H - ORIGIN.y)
     ctx.strokeStyle = '#cbd5e1'
+    ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, ORIGIN.y)
     ctx.lineTo(W, ORIGIN.y)
     ctx.stroke()
 
     // grid
-    ctx.strokeStyle = '#e2e8f0'
-    ctx.lineWidth = 1
+    ctx.strokeStyle = '#eef2f7'
     for (let mx = 0; mx * SCALE < W; mx += 5) {
       ctx.beginPath()
       ctx.moveTo(ORIGIN.x + mx * SCALE, 0)
@@ -147,8 +181,6 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     }
 
     const s = stateRef.current
-    const px = ORIGIN.x + s.x * SCALE
-    const py = ORIGIN.y - s.y * SCALE
 
     // trail
     if (showTrail && s.trail.length > 1) {
@@ -164,37 +196,63 @@ export function Projectile({ props }: { props: ProjectileProps }) {
       ctx.stroke()
     }
 
+    const aim = aimRef.current
+
+    // predicted trajectory while aiming
+    if (aim) {
+      const pts = predict(aim.vx, aim.vy, g, d)
+      if (pts.length > 1) {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.9)'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 5])
+        ctx.beginPath()
+        pts.forEach((pt, i) => {
+          const x = ORIGIN.x + pt.x * SCALE
+          const y = ORIGIN.y - pt.y * SCALE
+          if (i === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
+        })
+        ctx.stroke()
+        ctx.setLineDash([])
+        // landing marker
+        const last = pts[pts.length - 1]
+        const lx = ORIGIN.x + last.x * SCALE
+        const ly = ORIGIN.y
+        ctx.fillStyle = '#94a3b8'
+        ctx.beginPath()
+        ctx.arc(lx, ly, 4, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      // launch vector arrow
+      const aimLen = aim.speed * 3
+      drawArrow(
+        ctx,
+        ORIGIN.x,
+        ORIGIN.y,
+        ORIGIN.x + (aim.vx / aim.speed) * aimLen,
+        ORIGIN.y - (aim.vy / aim.speed) * aimLen,
+        '#4f46e5',
+      )
+      const angle = (Math.atan2(aim.vy, aim.vx) * 180) / Math.PI
+      ctx.fillStyle = '#475569'
+      ctx.font = '12px ui-sans-serif, system-ui'
+      ctx.fillText(`v₀ = ${aim.speed.toFixed(1)} m/s`, 12, 22)
+      ctx.fillText(`α = ${angle.toFixed(0)}°`, 12, 40)
+    }
+
     // ball
+    const px = ORIGIN.x + s.x * SCALE
+    const py = ORIGIN.y - s.y * SCALE
     ctx.fillStyle = '#4f46e5'
     ctx.beginPath()
     ctx.arc(px, py, 8, 0, Math.PI * 2)
     ctx.fill()
 
-    // velocity vectors
+    // velocity vectors during flight
     if (showVelocity && s.flying) {
       drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py, '#ef4444', 'vx')
       drawArrow(ctx, px, py, px, py - s.vy * SCALE * 0.3, '#10b981', 'vy')
       drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py - s.vy * SCALE * 0.3, '#1e293b')
-    }
-
-    // aim guide
-    const aim = aimRef.current
-    if (aim) {
-      const ex = ORIGIN.x - aim.dx * SCALE
-      const ey = ORIGIN.y + aim.dy * SCALE
-      ctx.strokeStyle = '#94a3b8'
-      ctx.setLineDash([5, 4])
-      ctx.beginPath()
-      ctx.moveTo(ORIGIN.x, ORIGIN.y)
-      ctx.lineTo(ex, ey)
-      ctx.stroke()
-      ctx.setLineDash([])
-      const speed = Math.hypot(aim.dx, aim.dy)
-      const angle = (Math.atan2(aim.dy, aim.dx) * 180) / Math.PI
-      ctx.fillStyle = '#475569'
-      ctx.font = '12px ui-sans-serif, system-ui'
-      ctx.fillText(`v₀ = ${speed.toFixed(1)} m/s`, 12, 22)
-      ctx.fillText(`α = ${angle.toFixed(0)}°`, 12, 40)
     }
 
     // origin marker
@@ -203,21 +261,30 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     ctx.arc(ORIGIN.x, ORIGIN.y, 4, 0, Math.PI * 2)
     ctx.fill()
 
-    if (!s.flying && !aim) {
+    if (!s.flying && !aim && !s.landed) {
       ctx.fillStyle = '#94a3b8'
       ctx.font = '12px ui-sans-serif, system-ui'
-      ctx.fillText('从发射点向反方向拖拽，松手发射', 12, H - 14)
+      ctx.fillText('从发射点朝目标方向拖拽，松手发射', 12, H - 14)
     }
     if (s.flying) {
       ctx.fillStyle = '#475569'
       ctx.font = '12px ui-sans-serif, system-ui'
-      ctx.fillText(`x = ${s.x.toFixed(1)} m   y = ${s.y.toFixed(1)} m`, W - 160, 22)
-      ctx.fillText(`vx = ${s.vx.toFixed(1)}   vy = ${s.vy.toFixed(1)}`, W - 160, 40)
+      ctx.fillText(`x = ${s.x.toFixed(1)} m   y = ${s.y.toFixed(1)} m`, W - 168, 22)
+      ctx.fillText(`vx = ${s.vx.toFixed(1)}   vy = ${s.vy.toFixed(1)}`, W - 168, 40)
+    }
+    if (s.landed) {
+      ctx.fillStyle = '#1e293b'
+      ctx.font = '600 12px ui-sans-serif, system-ui'
+      ctx.fillText(
+        `射程 ${s.range.toFixed(1)} m · 最高 ${s.maxH.toFixed(1)} m · 飞行 ${s.flightTime.toFixed(2)} s`,
+        12,
+        H - 14,
+      )
     }
   })
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <canvas
         ref={canvasRef}
         onPointerDown={onPointerDown}
@@ -239,8 +306,22 @@ export function Projectile({ props }: { props: ProjectileProps }) {
   )
 }
 
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v))
+/** Forward-simulate the same integration used in the live loop, from (0,0). */
+function predict(vx: number, vy: number, g: number, d: number): Pt[] {
+  const pts: Pt[] = []
+  let x = 0
+  let y = 0
+  for (let i = 0; i < 800; i++) {
+    vy -= g * PREDICT_DT
+    vx *= 1 - d * PREDICT_DT
+    vy *= 1 - d * PREDICT_DT
+    x += vx * PREDICT_DT
+    y += vy * PREDICT_DT
+    pts.push({ x, y })
+    if (y <= 0 && i > 0) break
+    if (x * SCALE > W) break
+  }
+  return pts
 }
 
 function drawArrow(
@@ -276,7 +357,7 @@ function drawArrow(
 export const ProjectileWidget: WidgetDefinition<ProjectileProps> = {
   type: 'projectile',
   label: '抛体运动',
-  description: '弹弓式拖拽设定初速度与角度，观察抛物线与速度分量。',
+  description: '朝目标方向拖拽设定初速度与角度，实时预览抛物线与速度分量。',
   icon: '🚀',
   defaultProps: {
     gravity: 9.8,

@@ -1,6 +1,15 @@
-// Tiny, dependency-free markdown renderer. Supports: headings, bold, italic,
-// inline code, fenced code blocks, links, lists (ul/ol), blockquotes, hr.
-// Output is escaped before applying inline formatting — safe by construction.
+// Tiny markdown renderer. Supports: headings, bold, italic, inline code, fenced
+// code blocks (with syntax highlighting), links, lists (ul/ol), blockquotes, hr.
+// Math ($...$ inline, $$...$$ block) is rendered with KaTeX.
+//
+// Safety: prose is escaped before inline formatting. Code spans and math are
+// extracted from the RAW string into placeholder slots first, so KaTeX receives
+// real TeX (not pre-escaped entities) and code formatting is skipped. The slots
+// are spliced back after escaping — NUL-delimited placeholders pass through
+// escapeHtml and the inline regexes untouched, and never collide with prose.
+
+import katex from 'katex'
+import { highlight } from './highlight'
 
 function escapeHtml(s: string): string {
   return s
@@ -11,19 +20,51 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;')
 }
 
+function renderTex(tex: string, displayMode: boolean): string {
+  try {
+    return katex.renderToString(tex, { displayMode, throwOnError: false, output: 'html' })
+  } catch {
+    return `<span class="math-error">${escapeHtml(tex)}</span>`
+  }
+}
+
+function blockMath(tex: string): string {
+  return `<div class="math-block">${renderTex(tex, true)}</div>`
+}
+
+const NUL = String.fromCharCode(0)
+const SLOT_RE = new RegExp(NUL + '(\\d+)' + NUL, 'g')
+
 function inline(s: string): string {
-  let out = escapeHtml(s)
-  // inline code first (so its contents aren't formatted)
-  out = out.replace(/`([^`]+)`/g, '<code>$1</code>')
-  // inline math $...$
-  out = out.replace(/\$([^$\n]+)\$/g, '<span class="math-inline">$1</span>')
-  // bold
-  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  // italic
-  out = out.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
-  // links [text](url)
-  out = out.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-  return out
+  // Stash code spans + inline math (rendered to HTML) in slots, escape the
+  // surrounding prose, then splice the slots back.
+  const slots: string[] = []
+  const stash = (html: string): string => {
+    slots.push(html)
+    return NUL + (slots.length - 1) + NUL
+  }
+
+  let work = s.replace(/`([^`]+)`/g, (_m, code: string) => stash(`<code>${escapeHtml(code)}</code>`))
+  work = work.replace(/\$([^$\n]+)\$/g, (_m, tex: string) => stash(renderTex(tex, false)))
+
+  work = escapeHtml(work)
+  work = work.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  work = work.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+  work = work.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
+
+  return work.replace(SLOT_RE, (_m, i: string) => slots[Number(i)] ?? '')
+}
+
+function codeCard(lang: string, code: string): string {
+  const body = lang ? highlight(code, lang) : escapeHtml(code)
+  const label = lang || 'text'
+  return (
+    '<div class="code-card"><div class="code-head">' +
+    '<span class="dots"><i></i><i></i><i></i></span>' +
+    `<span class="code-lang">${escapeHtml(label)}</span>` +
+    '<button type="button" class="code-copy" data-copy aria-label="复制代码">复制</button>' +
+    `</div><pre><code data-lang="${escapeHtml(lang)}">${body}</code></pre></div>`
+  )
 }
 
 export function renderMarkdown(src: string): string {
@@ -49,7 +90,7 @@ export function renderMarkdown(src: string): string {
 
     if (line.startsWith('```')) {
       if (inCode) {
-        html.push(`<pre><code data-lang="${codeLang}">${escapeHtml(codeBuf.join('\n'))}</code></pre>`)
+        html.push(codeCard(codeLang, codeBuf.join('\n')))
         codeBuf = []
         codeLang = ''
         inCode = false
@@ -69,9 +110,7 @@ export function renderMarkdown(src: string): string {
 
     if (line.trim().startsWith('$$')) {
       if (inMath) {
-        html.push(
-          `<div class="math-block">${escapeHtml(mathBuf.join('\n'))}</div>`,
-        )
+        html.push(blockMath(mathBuf.join('\n')))
         mathBuf = []
         inMath = false
       } else {
@@ -80,7 +119,7 @@ export function renderMarkdown(src: string): string {
         // support inline $$ on same line: $$...$$
         const rest = line.trim().slice(2)
         if (rest.endsWith('$$') && rest.length > 2) {
-          html.push(`<div class="math-block">${escapeHtml(rest.slice(0, -2))}</div>`)
+          html.push(blockMath(rest.slice(0, -2)))
           inMath = false
         } else if (rest) {
           mathBuf.push(rest)
@@ -163,10 +202,10 @@ export function renderMarkdown(src: string): string {
 
   closeList()
   if (inCode) {
-    html.push(`<pre><code>${escapeHtml(codeBuf.join('\n'))}</code></pre>`)
+    html.push(codeCard(codeLang, codeBuf.join('\n')))
   }
   if (inMath) {
-    html.push(`<div class="math-block">${escapeHtml(mathBuf.join('\n'))}</div>`)
+    html.push(blockMath(mathBuf.join('\n')))
   }
   return html.join('\n')
 }

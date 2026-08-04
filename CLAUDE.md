@@ -13,7 +13,7 @@
 - **React 18** + **TypeScript**（strict 模式）
 - **Vite 6** 构建 / 开发服务器
 - **Tailwind CSS 4**（通过 `@tailwindcss/vite` 插件接入，入口在 `src/index.css` 用 `@import "tailwindcss"`）
-- **零额外运行时依赖**：可视化全部用原生 Canvas 2D 与 SVG；Markdown 为自写的渲染器
+- **可视化零依赖**：Canvas 2D 与 SVG 全部手写。唯一的额外运行时依赖是 **KaTeX**（数学公式渲染）；Markdown 渲染器为自写，代码高亮为自写的轻量分词器（`src/lib/highlight.ts`）
 - 包管理器：npm（Node v24+）
 
 ## 常用命令
@@ -46,7 +46,8 @@ live-blog/
     ├── lib/
     │   ├── useAnimationFrame.ts  # rAF 循环 hook（dt 秒级，限制最大 0.05s）
     │   ├── id.ts                 # uid()
-    │   └── markdown.ts           # 无依赖 Markdown 渲染器
+    │   ├── markdown.ts           # Markdown 渲染器（含 KaTeX 公式、代码高亮、窗口栏）
+    │   └── highlight.ts          # 轻量正则分词器，为代码块生成 tok-* 高亮 HTML
     ├── components/
     │   ├── BlockRenderer.tsx  # 阅读器中按 block.kind 分发渲染
     │   ├── BlockEditor.tsx    # 编辑器中的区块卡片（文字/Widget 编辑）
@@ -78,7 +79,7 @@ interface Article {
 }
 ```
 
-- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v2`；修改数据结构时记得升版本号）。
+- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v3`；修改数据结构或 seed 内容时记得升版本号。v3 首次加载会非破坏性迁移旧 v2 数据：把内置 demo 文章刷新为最新 seed、保留用户自建文章）。
 - `Block.id` 由 `src/lib/id.ts` 的 `uid(prefix)` 生成；示例文章使用稳定 id（`art-pendulum` 等）。
 - 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回四篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体，每个知识点一篇）。
 
@@ -125,8 +126,9 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 `src/lib/markdown.ts` 是逐行手写的渲染器，输出字符串 HTML：
 - 支持 `#`~`###` 标题、粗体 `**x**`、斜体 `*x*`、行内 `` `code` ``、围栏代码块 ```` ``` ````、链接 `[t](url)`、`-`/`1.` 列表、`>` 引用、`---` 分割线。
-- 支持 `$...$` 行内公式与 `$$...$$` 块级公式（以等宽字体显示，未接入 LaTeX 渲染）。
-- **所有文本先 `escapeHtml` 再做 inline 替换**，输出默认安全；在组件中用 `dangerouslySetInnerHTML` 渲染。
+- 支持 `$...$` 行内公式与 `$$...$$` 块级公式，由 **KaTeX** 渲染（`main.tsx` 引入 `katex/dist/katex.min.css`，Vite 自动打包字体）。
+- 围栏代码块带编辑器窗口栏（三圆点 + 语言标签 + 复制按钮）并经 `src/lib/highlight.ts` 做 C-like 语法高亮（`.tok-*`）。复制按钮在 `dangerouslySetInnerHTML` 内，靠 `BlockRenderer` 里的 scoped 委托 click 实现（是 click 不是拖拽，不受下面的 `window.addEventListener` 约定限制）。
+- **安全模型**：`inline()` 先把行内代码与 `$...$` 抽到 NUL 分隔的占位槽（`String.fromCharCode(0)`）、各自渲染为 HTML，再对剩余文本 `escapeHtml`，最后还原占位。这样 KaTeX 收到的是原始 TeX（不会被预转义破坏，如 `$a<b$`），NUL 也不会与正文里的数字冲突。块级 `$$` 直接喂原始文本给 KaTeX。输出默认安全，在组件中用 `dangerouslySetInnerHTML` 渲染。
 - 文章排版样式集中在 `index.css` 的 `.prose-lb` 命名空间下。
 
 ### 阅读 / 编辑模式
@@ -152,10 +154,10 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 - 单摆 / 贝塞尔 / 抛体三个 Widget 的指针交互已统一改为 React 指针事件 + `setPointerCapture`（排序 Widget 原本就用按钮交互，未受影响）。新增 Widget 请沿用同一模式，不要回退到 `window.addEventListener`。
 - 示例已从「一篇长文含四个 Widget」拆分为四篇独立文章（每篇一个知识点），并将 localStorage key 升至 `v2` 以触发旧数据迁移。
+- **2026-08-04 大改版**：① 数学公式改用 KaTeX 真实渲染（新增运行时依赖 `katex`，见上「技术栈」）；② 代码块加语法高亮 + 编辑器窗口栏 + 复制；③ 排序 Widget 在阅读模式新增算法 Tab / 复杂度徽标 / 长度与速度滑块（此前只能在编辑器里切换算法）；④ 抛体 Widget 重写为「朝目标方向拖拽 + 实时预测轨迹」，落地显示射程/最高/飞行时间；⑤ 整体打磨为精致浅色「技术博客」主题（阅读时长、品牌 prompt、代码卡片等）。**localStorage key 升至 `v3`，首次加载非破坏性迁移 v2 数据（刷新内置 demo 文章、保留用户自建文章）**——因为旧的 seed 文案（如抛体「向反方向拖拽」）必须随新交互一起更新，否则说明书与组件行为对不上。
 
 ## 不做的事（避免误解范围）
 
 - 不做后端 / 多端同步，数据仅存浏览器 `localStorage`。
 - 不做富文本所见即所得编辑器，文字段落用 Markdown 文本域 + 预览。
 - 不做账号、评论、发布流等 CMS 功能。
-- 不引入数学公式排版库（KaTeX/MathJax），`$...$` 仅做等宽字体展示。

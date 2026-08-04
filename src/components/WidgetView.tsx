@@ -19,8 +19,11 @@ export function WidgetView({ type, props }: Props) {
   return (
     <figure className="my-6">
       <Comp props={props} />
-      <figcaption className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-        <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{def.icon} {def.label}</span>
+      <figcaption className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-600">
+          {def.icon} {def.label}
+        </span>
+        <span className="rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-600">交互</span>
         <span>{def.description}</span>
       </figcaption>
     </figure>

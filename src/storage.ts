@@ -1,26 +1,67 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v2'
+const KEY = 'liveblog:articles:v3'
+const LEGACY_KEY = 'liveblog:articles:v2'
 
 export function loadArticles(): Article[] {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) {
-      const seed = seedArticles()
-      saveArticles(seed)
-      return seed
+    if (raw) {
+      const parsed = JSON.parse(raw) as Article[]
+      if (Array.isArray(parsed) && parsed.length) return parsed
     }
-    const parsed = JSON.parse(raw) as Article[]
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      const seed = seedArticles()
-      saveArticles(seed)
-      return seed
-    }
-    return parsed
+    // First launch on v3 (or v3 empty/corrupt): migrate any v2 data, then seed.
+    return migrate()
   } catch {
     return seedArticles()
   }
+}
+
+/**
+ * v2 → v3 migration. The built-in demo articles (stable ids art-*) carry text
+ * and default props that must match the current widget code — when that code
+ * changes (e.g. the projectile interaction), the stored copies go stale and the
+ * article instructions no longer match the widget. This refreshes those demo
+ * articles from the latest seed while preserving any user-created articles and
+ * their ordering.
+ */
+function migrate(): Article[] {
+  const seed = seedArticles()
+  const seedById = new Map(seed.map((a) => [a.id, a]))
+
+  let existing: Article[] = []
+  const legacy = localStorage.getItem(LEGACY_KEY)
+  if (legacy) {
+    try {
+      const parsed = JSON.parse(legacy) as Article[]
+      if (Array.isArray(parsed)) existing = parsed
+    } catch {
+      /* corrupt legacy data — fall through to fresh seed */
+    }
+  }
+
+  if (existing.length === 0) {
+    saveArticles(seed)
+    return seed
+  }
+
+  const refreshed = new Set<string>()
+  const merged = existing.map((a) => {
+    const fresh = seedById.get(a.id)
+    if (fresh) {
+      refreshed.add(a.id)
+      return fresh
+    }
+    return a
+  })
+  // Append any demo article that wasn't present before.
+  for (const s of seed) {
+    if (!refreshed.has(s.id)) merged.push(s)
+  }
+
+  saveArticles(merged)
+  return merged
 }
 
 export function saveArticles(articles: Article[]) {

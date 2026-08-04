@@ -99,8 +99,10 @@ export default function App() {
               </svg>
             </div>
             <div>
-              <div className="text-sm font-semibold leading-tight">LiveBlog</div>
-              <div className="text-[11px] leading-tight text-slate-400">交互式写作平台</div>
+              <div className="text-sm font-semibold leading-tight tracking-tight">
+                <span className="font-mono text-indigo-500">❯</span> LiveBlog
+              </div>
+              <div className="font-mono text-[11px] leading-tight text-slate-400">interactive · writing</div>
             </div>
           </div>
 
@@ -150,8 +152,10 @@ export default function App() {
               {articles.map((a) => (
                 <div
                   key={a.id}
-                  className={`group cursor-pointer rounded-lg px-3 py-2 text-sm ${
-                    a.id === currentId ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
+                  className={`group cursor-pointer rounded-lg border-l-2 px-3 py-2 text-sm transition-colors ${
+                    a.id === currentId
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-transparent text-slate-700 hover:bg-slate-50'
                   }`}
                   onClick={() => {
                     setCurrentId(a.id)
@@ -198,17 +202,32 @@ export default function App() {
   )
 }
 
+function readingTime(a: Article): number {
+  let cjk = 0
+  let words = 0
+  for (const b of a.blocks) {
+    if (b.kind !== 'text') continue
+    const cjkMatches = b.content.match(/[一-鿿]/g)
+    cjk += cjkMatches ? cjkMatches.length : 0
+    const w = b.content.replace(/[一-鿿]/g, ' ').match(/[A-Za-z0-9]+/g)
+    words += w ? w.length : 0
+  }
+  return Math.max(1, Math.round(cjk / 400 + words / 250))
+}
+
 function ReadView({ article }: { article: Article }) {
   return (
     <article>
-      <h1 className="text-3xl font-bold leading-tight text-slate-900 md:text-4xl">{article.title}</h1>
+      <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-900 md:text-4xl">{article.title}</h1>
       {article.description && (
         <p className="mt-3 text-lg text-slate-500">{article.description}</p>
       )}
-      <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-        <span>更新于 {new Date(article.updatedAt).toLocaleString()}</span>
+      <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-xs text-slate-400">
+        <span>{new Date(article.updatedAt).toLocaleDateString()}</span>
         <span>·</span>
         <span>{article.blocks.length} 个段落</span>
+        <span>·</span>
+        <span>⏱ 约 {readingTime(article)} 分钟</span>
       </div>
       <div className="my-8 h-px bg-slate-200" />
       <div>

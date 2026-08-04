@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { WidgetDefinition } from './registry'
 
 interface SortProps {
@@ -15,6 +15,13 @@ type Step = {
   sorted: number[]
   done?: boolean
 }
+
+const ALGOS: { value: SortProps['algorithm']; label: string; complex: string }[] = [
+  { value: 'bubble', label: '冒泡', complex: 'O(n²)' },
+  { value: 'selection', label: '选择', complex: 'O(n²)' },
+  { value: 'insertion', label: '插入', complex: 'O(n²)' },
+  { value: 'quick', label: '快排', complex: 'O(n log n)' },
+]
 
 function generateSteps(algo: SortProps['algorithm'], input: number[]): Step[] {
   const a = input.slice()
@@ -95,8 +102,19 @@ function generateSteps(algo: SortProps['algorithm'], input: number[]): Step[] {
   return steps
 }
 
+const BAR_AREA = 204 // px reserved for bars (leaves headroom for value labels)
+
 function Sort({ props }: { props: SortProps }) {
-  const { count, algorithm, speed } = props
+  const { count: countProp, algorithm: algoProp, speed: speedProp } = props
+  // Mirror props into local state so readers can switch algorithms / tune size
+  // & speed directly; the editor's ConfigPanel still drives the saved default.
+  const [algorithm, setAlgorithm] = useState<SortProps['algorithm']>(algoProp)
+  const [count, setCount] = useState(countProp)
+  const [speed, setSpeed] = useState(speedProp)
+  useEffect(() => setAlgorithm(algoProp), [algoProp])
+  useEffect(() => setCount(countProp), [countProp])
+  useEffect(() => setSpeed(speedProp), [speedProp])
+
   const [seed, setSeed] = useState(0)
   const steps = useMemo(() => {
     // deterministic-ish random via seed
@@ -112,8 +130,6 @@ function Sort({ props }: { props: SortProps }) {
 
   const [idx, setIdx] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const idxRef = useRef(0)
-  idxRef.current = idx
 
   useEffect(() => {
     setIdx(0)
@@ -140,6 +156,8 @@ function Sort({ props }: { props: SortProps }) {
 
   const step = steps[Math.min(idx, steps.length - 1)]
   const max = Math.max(...step.array)
+  const showLabels = count <= 20
+  const activeAlgo = ALGOS.find((a) => a.value === algorithm)!
 
   const stepForward = () => setIdx((i) => Math.min(steps.length - 1, i + 1))
   const stepBack = () => setIdx((i) => Math.max(0, i - 1))
@@ -152,8 +170,31 @@ function Sort({ props }: { props: SortProps }) {
   const swaps = steps.slice(0, idx + 1).filter((s) => s.swap).length
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <div className="flex items-end gap-[3px]" style={{ height: 220 }}>
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {/* algorithm tabs */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+          {ALGOS.map((a) => (
+            <button
+              key={a.value}
+              onClick={() => setAlgorithm(a.value)}
+              className={`rounded-[6px] px-3 py-1 text-sm font-medium transition-colors ${
+                algorithm === a.value
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+        <span className="ml-auto rounded-full bg-indigo-50 px-2.5 py-1 font-mono text-xs text-indigo-600">
+          平均 {activeAlgo.complex}
+        </span>
+      </div>
+
+      {/* chart */}
+      <div className="flex gap-[3px] border-b border-slate-100 pb-1" style={{ height: 220 }}>
         {step.array.map((v, i) => {
           const isCompare = step.compare?.includes(i)
           const isSwap = step.swap?.includes(i)
@@ -166,16 +207,21 @@ function Sort({ props }: { props: SortProps }) {
           if (isPivot) bg = '#f472b6'
           if (step.done) bg = '#34d399'
           return (
-            <div
-              key={i}
-              className="flex-1 rounded-t transition-[height] duration-100"
-              style={{ height: `${(v / max) * 100}%`, background: bg }}
-              title={`${v}`}
-            />
+            <div key={i} className="flex flex-1 flex-col items-center justify-end">
+              {showLabels && (
+                <span className="mb-0.5 text-[10px] leading-none tabular-nums text-slate-400">{v}</span>
+              )}
+              <div
+                className="w-full rounded-t transition-[height] duration-100"
+                style={{ height: `${(v / max) * BAR_AREA}px`, background: bg }}
+                title={`${v}`}
+              />
+            </div>
           )
         })}
       </div>
 
+      {/* transport */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           onClick={reset}
@@ -211,14 +257,62 @@ function Sort({ props }: { props: SortProps }) {
         </button>
       </div>
 
-      <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-        <span>进度 {idx}/{steps.length - 1}</span>
+      {/* size & speed sliders */}
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="w-16 shrink-0">数组长度</span>
+          <input
+            type="range"
+            min={6}
+            max={48}
+            step={1}
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value))}
+            className="flex-1 accent-indigo-600"
+          />
+          <span className="w-6 text-right tabular-nums text-slate-600">{count}</span>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="w-16 shrink-0">速度</span>
+          <input
+            type="range"
+            min={1}
+            max={60}
+            step={1}
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            className="flex-1 accent-indigo-600"
+          />
+          <span className="w-12 text-right tabular-nums text-slate-600">{speed}/s</span>
+        </label>
+      </div>
+
+      {/* stats */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+        <span className="tabular-nums">
+          进度 {idx}/{steps.length - 1}
+        </span>
         <span>·</span>
-        <span>比较 {comparisons}</span>
+        <span className="tabular-nums">比较 {comparisons}</span>
         <span>·</span>
-        <span>交换 {swaps}</span>
+        <span className="tabular-nums">交换 {swaps}</span>
+        <span className="ml-auto hidden items-center gap-3 sm:flex">
+          <Legend color="#fbbf24" label="比较" />
+          <Legend color="#f87171" label="交换" />
+          <Legend color="#f472b6" label="基准" />
+          <Legend color="#34d399" label="已排序" />
+        </span>
       </div>
     </div>
+  )
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
+      {label}
+    </span>
   )
 }
 
@@ -230,7 +324,7 @@ export const SortWidget: WidgetDefinition<SortProps> = {
   defaultProps: {
     count: 24,
     algorithm: 'bubble',
-    speed: 8,
+    speed: 12,
   },
   configSchema: [
     { key: 'count', label: '数组长度', type: 'range', min: 6, max: 48, step: 1 },
