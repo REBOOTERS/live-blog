@@ -65,7 +65,8 @@ live-blog/
         ├── BackpropWidget.tsx      # 反向传播（Canvas，真实 tanh MLP 训练 + 权重图）
         ├── ColorWidget.tsx         # 三原色混色（Canvas，加色/减色 + RGB/HSL）
         ├── SoundWaveWidget.tsx     # 声波与频率（Canvas + Web Audio，真实发声 + 拍频）
-        └── TransformerWidget.tsx   # Transformer 自注意力（SVG，真实 scaled dot-product）
+        ├── TransformerWidget.tsx   # Transformer 自注意力（SVG，真实 scaled dot-product）
+        └── GraphSearchWidget.tsx   # BFS/DFS 图遍历（SVG，队列/栈前沿 + 生成树）
 ```
 
 ## 数据模型
@@ -167,7 +168,7 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 > 最后更新：2026-08-05
 
 - 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵/三原色）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
-- 内置示例共十篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力。localStorage key 已升至 `v5`，迁移逻辑见 `storage.ts`。
+- 内置示例共十一篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历。localStorage key 已升至 `v6`，迁移逻辑见 `storage.ts`。
 - **2026-08-05 视觉改版**：整体改为深色霓虹科技主题（indigo→cyan 渐变主色、辉光、网格底纹、`.lb-surface` 卡片），全部 Widget 画布重绘为深色高对比配色并加发光；range 控件自定义霓虹滑块。数学公式用 KaTeX、代码块有语法高亮。新增 Widget 时请遵循上面的「画布配色约定」。
 - **2026-08-05 清晰度/交互修复**：① 所有 Canvas Widget 改用 `prepareCanvas` 解决文字模糊（见上「指针/交互约定」）；② 修复 MatrixWidget 的 `viewBox` 尺度不匹配导致图形缩成中心一点、无法交互的问题。
 

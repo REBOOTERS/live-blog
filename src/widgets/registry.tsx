@@ -9,6 +9,7 @@ import { BackpropWidget } from './BackpropWidget'
 import { ColorWidget } from './ColorWidget'
 import { SoundWaveWidget } from './SoundWaveWidget'
 import { TransformerWidget } from './TransformerWidget'
+import { GraphSearchWidget } from './GraphSearchWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -51,6 +52,7 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'color-mix': ColorWidget,
   'sound-wave': SoundWaveWidget,
   transformer: TransformerWidget,
+  'graph-search': GraphSearchWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {

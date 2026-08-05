@@ -419,6 +419,59 @@ function transformerArticle(): Article {
   }
 }
 
+function graphSearchArticle(): Article {
+  return {
+    id: 'art-graph-search',
+    title: '广度优先与深度优先：两种遍历图的姿势',
+    description: '在同一张图上对比 BFS 与 DFS，理解队列、栈与生成树的差异及各自的应用。',
+    updatedAt: now(),
+    blocks: [
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 走迷宫的两种策略\n\n想象你站在一座迷宫的入口，要找到某个出口。你有两种朴素的策略：\n\n- **一条路走到黑**：沿当前方向一直走，遇到岔路就选一条，走到死胡同才退回来换路。这是**深度优先搜索（DFS）**——像贴着墙摸索。\n- **一圈圈向外扫**：先探完离起点一步之遥的所有路口，再探两步之遥的，三步之遥的……像水波一样一层层扩散。这是**广度优先搜索（BFS）**。\n\n这两种策略几乎就是图遍历的全部基础。它们的差别不在「走」，而在「**先走谁**」——而这背后是两种最基本的数据结构：**栈**和**队列**。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'widget',
+        type: 'graph-search',
+        props: { algorithm: 'bfs', speed: 4 },
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 动手对比\n\n上面的图里，绿色环是起点 A，粉色虚线环是终点 J。先点**播放**看 BFS：\n\n- 节点按访问顺序被标上 1、2、3…；亮黄色是「前沿」（待探索的节点），青色高亮是当前正在访问的节点。\n- 注意 BFS 的前沿是一个**队列**（下方那排黄块，从左边出）——先加进去的先被探索，于是搜索像波浪一样按「跳数」均匀推进。\n- 切到 **DFS** 再播放一次：前沿变成一个**栈**（从右边出），搜索会一头扎到底（A→B→D→G→H→J），再回头探索其他分支。深蓝色的边是搜索过程中自然形成的「生成树」。\n- 试着**点击节点**改起点和终点（用「设起点 / 设终点」切换），观察两种算法访问顺序与步数的差别。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 共同的骨架\n\n无论 BFS 还是 DFS，核心都是同一个循环：\n\n```text\n把起点放入「待探索」容器\nwhile 容器不空：\n    取出一个节点 cur\n    若 cur 已访问过：跳过\n    标记 cur 已访问，处理 cur\n    把 cur 的每个「未访问过且不在容器里」的邻居放入容器\n```\n\n**唯一的差别**是「取出」从哪一端：\n\n- **BFS** 用**队列（FIFO）**：从一端取 → 先放进去的先出 → 一层层扫。\n- **DFS** 用**栈（LIFO）**：从另一端取 → 后放进去的先出 → 一条道走到黑。\n\n把容器换一下，BFS 就变成了 DFS，反之亦然。这也是为什么递归写出的 DFS 本质上就是在用「函数调用栈」。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## BFS：最短跳数的保证\n\n因为 BFS 按「跳数」逐层扩散，**它最先到达某节点时，走的就是最少边数的路径**（在无权图里即最短路径）。这是 BFS 最珍贵的性质。\n\n```text\nfunction bfs(start):\n    queue = [start]; visited = {start}; dist[start] = 0\n    while queue:\n        cur = queue.shift()           // 从队首取\n        for n in neighbors(cur):\n            if n not in visited:\n                visited.add(n); dist[n] = dist[cur] + 1\n                queue.push(n)\n```\n\n**应用**：无权图最短路径、社交网络里的「N 度好友」、网页爬虫按层爬取、迷宫求最少步数解、广播消息的最快扩散路径。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## DFS：深入、回溯与递归的优雅\n\nDFS 一路深入，走到无路可走就**回溯（backtrack）**换一条分支。它常用递归实现，因为递归天然带一个调用栈：\n\n```text\nfunction dfs(cur, visited):\n    visited.add(cur)\n    for n in neighbors(cur):\n        if n not in visited:\n            dfs(n, visited)            // 深入\n    // 函数返回时自动「回溯」到上一层\n```\n\nDFS 不保证最短路径，但有些任务天生适合它：\n\n- **连通分量**：从任一点 DFS，能访问到的就是同一连通块。\n- **检测环**：若 DFS 路径上遇到一个「正在访问中」的祖先节点，就是环。\n- **拓扑排序**：对 DAG 做 DFS，节点**完成顺序的逆序**就是拓扑序——编译器据此决定编译先后。\n- **迷宫求解 / 数独 / 八皇后**：回溯法本质就是 DFS + 试错撤销。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 该用哪一个？\n\n两者**时间复杂度都是 $O(V+E)$**（$V$ 节点数、$E$ 边数），都要访问每条边、每个点各一次。差别在空间和性质：\n\n| | BFS | DFS |\n|---|---|---|\n| 数据结构 | 队列 | 栈（或递归） |\n| 空间 | $O(宽度的最大值)$，宽图里可能很大 | $O(深度的最大值)$，通常更省 |\n| 最短路径 | ✅ 无权图天然最短 | ❌ 不保证 |\n| 适合 | 最少步数、层序、社交距离 | 连通性、拓扑、环检测、回溯 |\n\n一个直觉：**关心「最近」用 BFS，关心「能不能到 / 顺序」用 DFS**。比如导航想找换乘最少→BFS；编译器要排出依赖顺序→DFS。\n\n回到上方的演示：把起点设成 A、终点设成 J，分别跑 BFS 和 DFS，对比访问顺序编号和前沿数据结构——你会清楚地看到，BFS 是「齐头并进的波」，DFS 是「一条道走到黑的钻头」。这就是图遍历最本质的两种节奏。',
+      },
+    ],
+  }
+}
+
 /** Returns the initial set of articles shown on first launch / empty storage. */
 export function seedArticles(): Article[] {
   return [
@@ -432,5 +485,6 @@ export function seedArticles(): Article[] {
     colorArticle(),
     soundArticle(),
     transformerArticle(),
+    graphSearchArticle(),
   ]
 }
