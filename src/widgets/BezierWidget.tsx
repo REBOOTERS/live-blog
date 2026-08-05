@@ -120,55 +120,62 @@ export function Bezier({ props }: { props: BezierProps }) {
   const ctrlPath = `M ${p0.x} ${p0.y} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y}`
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="lb-surface">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="block w-full touch-none"
+        className="w-full touch-none"
         style={{ aspectRatio: `${W} / ${H}` }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        {/* grid */}
         <defs>
           <pattern id="bz-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#f1f5f9" strokeWidth="1" />
+            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(148,163,184,0.08)" strokeWidth="1" />
           </pattern>
+          <filter id="bz-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
+        <rect width={W} height={H} fill="#0a0f1e" rx="8" />
         <rect width={W} height={H} fill="url(#bz-grid)" />
 
         {/* control polygon */}
-        <path d={ctrlPath} fill="none" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="5 4" />
+        <path d={ctrlPath} fill="none" stroke="rgba(148,163,184,0.4)" strokeWidth={1.5} strokeDasharray="5 4" />
 
         {/* cubic curve */}
-        <path d={path} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
+        <path d={path} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" filter="url(#bz-glow)" />
 
         {showConstruction && (
           <>
-            <line x1={a01.x} y1={a01.y} x2={a12.x} y2={a12.y} stroke="#a5b4fc" strokeWidth={1.5} />
-            <line x1={a12.x} y1={a12.y} x2={a23.x} y2={a23.y} stroke="#a5b4fc" strokeWidth={1.5} />
-            <line x1={b012.x} y1={b012.y} x2={b123.x} y2={b123.y} stroke="#f59e0b" strokeWidth={1.5} />
-            <circle cx={a01.x} cy={a01.y} r={4} fill="#a5b4fc" />
-            <circle cx={a12.x} cy={a12.y} r={4} fill="#a5b4fc" />
-            <circle cx={a23.x} cy={a23.y} r={4} fill="#a5b4fc" />
-            <circle cx={b012.x} cy={b012.y} r={4} fill="#f59e0b" />
-            <circle cx={b123.x} cy={b123.y} r={4} fill="#f59e0b" />
+            <line x1={a01.x} y1={a01.y} x2={a12.x} y2={a12.y} stroke="#7dd3fc" strokeWidth={1.5} />
+            <line x1={a12.x} y1={a12.y} x2={a23.x} y2={a23.y} stroke="#7dd3fc" strokeWidth={1.5} />
+            <line x1={b012.x} y1={b012.y} x2={b123.x} y2={b123.y} stroke="#fbbf24" strokeWidth={1.5} />
+            <circle cx={a01.x} cy={a01.y} r={4} fill="#7dd3fc" />
+            <circle cx={a12.x} cy={a12.y} r={4} fill="#7dd3fc" />
+            <circle cx={a23.x} cy={a23.y} r={4} fill="#7dd3fc" />
+            <circle cx={b012.x} cy={b012.y} r={4} fill="#fbbf24" />
+            <circle cx={b123.x} cy={b123.y} r={4} fill="#fbbf24" />
           </>
         )}
 
         {/* moving point on curve */}
-        <circle cx={c0123.x} cy={c0123.y} r={6} fill="#ef4444" />
+        <circle cx={c0123.x} cy={c0123.y} r={7} fill="#fb7185" filter="url(#bz-glow)" />
 
         {/* endpoints / handles */}
-        <Handle pt={p0} color="#0f172a" onPointerDown={onHandleDown(0)} />
-        <Handle pt={p1} color="#64748b" onPointerDown={onHandleDown(1)} />
-        <Handle pt={p2} color="#64748b" onPointerDown={onHandleDown(2)} />
-        <Handle pt={p3} color="#0f172a" onPointerDown={onHandleDown(3)} />
+        <Handle pt={p0} color="#22d3ee" onPointerDown={onHandleDown(0)} />
+        <Handle pt={p1} color="#a5b4fc" onPointerDown={onHandleDown(1)} />
+        <Handle pt={p2} color="#a5b4fc" onPointerDown={onHandleDown(2)} />
+        <Handle pt={p3} color="#22d3ee" onPointerDown={onHandleDown(3)} />
       </svg>
 
       <div className="mt-3 flex items-center gap-3">
-        <span className="text-xs text-slate-500 w-8">t</span>
+        <span className="w-8 font-mono text-xs text-cyan-300">t</span>
         <input
           type="range"
           min={0}
@@ -180,13 +187,13 @@ export function Bezier({ props }: { props: BezierProps }) {
             tRef.current = v
             setT(v)
           }}
-          className="flex-1 accent-indigo-600"
+          className="flex-1"
           disabled={animate}
         />
-        <span className="w-12 text-right text-xs tabular-nums text-slate-600">{t.toFixed(2)}</span>
+        <span className="w-12 text-right font-mono text-xs tabular-nums text-slate-300">{t.toFixed(2)}</span>
       </div>
-      <p className="mt-2 text-xs text-slate-500">
-        拖动四个控制点调整曲线；红色点为当前 t 值在曲线上的位置，黄色点展示 De Casteljau 递推过程。
+      <p className="mt-2 text-xs text-slate-400">
+        拖动四个控制点调整曲线；红点为当前 t 值在曲线上的位置，黄点展示 De Casteljau 递推过程。
       </p>
     </div>
   )

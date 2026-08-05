@@ -210,18 +210,22 @@ export function Fourier({ props }: { props: FourierProps }) {
     const xOf = (n: number) => PAD_L + (n / (N - 1)) * PLOT_W
     const yOf = (v: number) => mid - v * half
 
+    // canvas background
+    ctx.fillStyle = '#070b16'
+    ctx.fillRect(0, 0, W, H)
+
     // signal panel background
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(PAD_L, SIG_TOP, PLOT_W, SIG_BOT - SIG_TOP)
+    ctx.fillStyle = '#0a0f1e'
+    ctx.fillRect(PAD_L, SIG_TOP - 4, PLOT_W, SIG_BOT - SIG_TOP + 8)
     // zero line
-    ctx.strokeStyle = '#e2e8f0'
+    ctx.strokeStyle = 'rgba(129,140,248,0.25)'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(PAD_L, mid)
     ctx.lineTo(W - PAD_R, mid)
     ctx.stroke()
     // gridlines at ±1
-    ctx.strokeStyle = '#f1f5f9'
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
     for (const gv of [-1, 1]) {
       ctx.beginPath()
       ctx.moveTo(PAD_L, yOf(gv))
@@ -229,22 +233,25 @@ export function Fourier({ props }: { props: FourierProps }) {
       ctx.stroke()
     }
 
-    // original signal (faint)
-    ctx.strokeStyle = '#94a3b8'
+    // original signal (faint dashed)
+    ctx.strokeStyle = 'rgba(148,163,184,0.6)'
     ctx.lineWidth = 1.5
     ctx.setLineDash([3, 3])
     drawPath(ctx, sig, xOf, yOf)
     ctx.setLineDash([])
 
-    // reconstruction (bold)
-    ctx.strokeStyle = '#4f46e5'
+    // reconstruction (bold neon)
+    ctx.strokeStyle = '#22d3ee'
     ctx.lineWidth = 2.5
+    ctx.shadowColor = 'rgba(34,211,238,0.5)'
+    ctx.shadowBlur = 8
     drawPath(ctx, recon, xOf, yOf)
+    ctx.shadowBlur = 0
 
     // filled area under reconstruction up to cursor
     const cursorN = phaseRef.current * (N - 1)
     const ci = Math.round(cursorN)
-    ctx.fillStyle = 'rgba(79,70,229,0.08)'
+    ctx.fillStyle = 'rgba(34,211,238,0.1)'
     ctx.beginPath()
     ctx.moveTo(xOf(0), mid)
     for (let n = 0; n <= ci; n++) ctx.lineTo(xOf(n), yOf(recon[n]))
@@ -253,49 +260,58 @@ export function Fourier({ props }: { props: FourierProps }) {
     ctx.fill()
 
     // cursor
-    ctx.strokeStyle = '#ef4444'
+    ctx.strokeStyle = '#fb7185'
     ctx.lineWidth = 1.5
     ctx.beginPath()
-    ctx.moveTo(xOf(ci), SIG_TOP)
-    ctx.lineTo(xOf(ci), SIG_BOT)
+    ctx.moveTo(xOf(ci), SIG_TOP - 4)
+    ctx.lineTo(xOf(ci), SIG_BOT + 4)
     ctx.stroke()
-    ctx.fillStyle = '#ef4444'
+    ctx.fillStyle = '#fb7185'
+    ctx.shadowColor = 'rgba(251,113,133,0.8)'
+    ctx.shadowBlur = 8
     ctx.beginPath()
     ctx.arc(xOf(ci), yOf(recon[ci]), 4, 0, Math.PI * 2)
     ctx.fill()
+    ctx.shadowBlur = 0
 
     // axis labels
-    ctx.fillStyle = '#94a3b8'
-    ctx.font = '10px ui-sans-serif, system-ui'
+    ctx.fillStyle = '#64748b'
+    ctx.font = '10px ui-monospace, monospace'
     ctx.fillText('+1', 6, yOf(1) + 3)
     ctx.fillText(' 0', 10, mid + 3)
     ctx.fillText('-1', 8, yOf(-1) + 3)
-    ctx.fillText('时域信号 n →', PAD_L, SIG_BOT + 12)
+    ctx.fillStyle = '#818cf8'
+    ctx.fillText('时域 n →', PAD_L, SIG_BOT + 12)
 
     if (!showSpectrum) return
 
     // spectrum panel
     const specH = SPEC_BOT - SPEC_TOP
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(PAD_L, SPEC_TOP, PLOT_W, specH)
-    ctx.fillStyle = '#64748b'
-    ctx.font = '10px ui-sans-serif, system-ui'
-    ctx.fillText('频域幅值 |X[k]| →', PAD_L, SPEC_TOP - 4)
+    ctx.fillStyle = '#0a0f1e'
+    ctx.fillRect(PAD_L, SPEC_TOP - 4, PLOT_W, specH + 8)
+    ctx.fillStyle = '#818cf8'
+    ctx.font = '10px ui-monospace, monospace'
+    ctx.fillText('频域 |X[k]| →', PAD_L, SPEC_TOP - 8)
 
     const kCount = N / 2 + 1
     const gap = 2
     const barW = (PLOT_W - gap * (kCount - 1)) / kCount
     for (let k = 0; k < kCount; k++) {
-      const h = (dft.amp[k] / maxAmp) * (specH - 4)
+      const h = (dft.amp[k] / maxAmp) * (specH - 6)
       const x = PAD_L + k * (barW + gap)
       const used = k <= harmonics
-      ctx.fillStyle = used ? '#6366f1' : '#cbd5e1'
+      ctx.fillStyle = used ? '#6366f1' : 'rgba(148,163,184,0.25)'
+      if (used) {
+        ctx.shadowColor = 'rgba(99,102,241,0.5)'
+        ctx.shadowBlur = 6
+      }
       ctx.fillRect(x, SPEC_BOT - h, barW, h)
+      ctx.shadowBlur = 0
     }
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="lb-surface">
       <canvas
         ref={canvasRef}
         onPointerDown={onPointerDown}
@@ -303,17 +319,19 @@ export function Fourier({ props }: { props: FourierProps }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         style={{ width: '100%', aspectRatio: `${W} / ${H}`, touchAction: 'none' }}
-        className="block touch-none"
+        className="touch-none"
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
           {PRESETS.map((p) => (
             <button
               key={p.id}
               onClick={() => choosePreset(p.id)}
               className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition-colors ${
-                preset === p.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                preset === p.id
+                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {p.label}
@@ -322,15 +340,15 @@ export function Fourier({ props }: { props: FourierProps }) {
         </div>
         <button
           onClick={() => setPlaying((v) => !v)}
-          className="ml-auto rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+          className="ml-auto rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] hover:brightness-110"
         >
           {playing ? '⏸ 暂停' : '▶ 播放'}
         </button>
       </div>
 
       <div className="mt-3 space-y-2">
-        <label className="flex items-center gap-3 text-xs text-slate-600">
-          <span className="w-28 shrink-0">参与重建的频率 K</span>
+        <label className="flex items-center gap-3 text-xs text-slate-400">
+          <span className="w-28 shrink-0">重建频率数 K</span>
           <input
             type="range"
             min={0}
@@ -338,11 +356,11 @@ export function Fourier({ props }: { props: FourierProps }) {
             step={1}
             value={harmonics}
             onChange={(e) => setHarmonics(Number(e.target.value))}
-            className="flex-1 accent-indigo-600"
+            className="flex-1"
           />
-          <span className="w-10 text-right tabular-nums text-slate-700">{harmonics}</span>
+          <span className="w-10 text-right font-mono tabular-nums text-slate-300">{harmonics}</span>
         </label>
-        <label className="flex items-center gap-3 text-xs text-slate-600">
+        <label className="flex items-center gap-3 text-xs text-slate-400">
           <span className="w-28 shrink-0">扫描速度</span>
           <input
             type="range"
@@ -351,13 +369,13 @@ export function Fourier({ props }: { props: FourierProps }) {
             step={0.05}
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
-            className="flex-1 accent-indigo-600"
+            className="flex-1"
           />
-          <span className="w-10 text-right tabular-nums text-slate-700">{speed.toFixed(2)}×</span>
+          <span className="w-10 text-right font-mono tabular-nums text-slate-300">{speed.toFixed(2)}×</span>
         </label>
       </div>
-      <p className="mt-2 text-xs text-slate-500">
-        灰色虚线为原始信号，蓝色实线为前 {harmonics} 个频率分量的重建；在上方时域图中拖动鼠标可以手绘信号。柱状图中深色为已采用的频率分量。
+      <p className="mt-2 text-xs text-slate-400">
+        灰色虚线为原始信号，青色实线为前 {harmonics} 个频率分量的重建；在上方时域图中拖动鼠标可手绘信号，频谱中深色柱为已采用的分量。
       </p>
     </div>
   )

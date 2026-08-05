@@ -105,43 +105,60 @@ export function Matrix({ props }: { props: MatrixProps }) {
   const shapePath = polygonPath(transformed)
   const origPath = polygonPath(SHAPE)
 
-  const fill = collapsed ? '#94a3b8' : reversed ? '#fb7185' : '#6366f1'
+  const fill = collapsed ? '#64748b' : reversed ? '#fb7185' : '#22d3ee'
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="lb-surface">
       <svg
         ref={svgRef}
         viewBox={VB}
-        className="block w-full touch-none"
-        style={{ aspectRatio: `${W} / ${H}` }}
+        className="w-full touch-none"
+        style={{ aspectRatio: `${W} / ${H}`, background: '#0a0f1e', borderRadius: 8 }}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
       >
+        <defs>
+          <filter id="mx-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="0.12" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         {showGrid && <Grid />}
 
-        {/* original shape (faint) */}
-        <path d={origPath} fill="none" stroke="#cbd5e1" strokeWidth={0.04} strokeDasharray="0.12 0.08" />
+        {/* original shape (faint dashed) */}
+        <path d={origPath} fill="none" stroke="rgba(148,163,184,0.35)" strokeWidth={0.04} strokeDasharray="0.12 0.08" />
 
-        {/* unit square axes of original basis */}
-        <line x1={0} y1={0} x2={1} y2={0} stroke="#fca5a5" strokeWidth={0.03} />
-        <line x1={0} y1={0} x2={0} y2={1} stroke="#93c5fd" strokeWidth={0.03} />
+        {/* original unit basis (faint) */}
+        <line x1={0} y1={0} x2={1} y2={0} stroke="rgba(251,113,133,0.35)" strokeWidth={0.03} />
+        <line x1={0} y1={0} x2={0} y2={1} stroke="rgba(56,189,248,0.35)" strokeWidth={0.03} />
 
         {/* transformed shape */}
-        <path d={shapePath} fill={fill} fillOpacity={collapsed ? 0.25 : 0.18} stroke={fill} strokeWidth={0.05} strokeLinejoin="round" />
+        <path
+          d={shapePath}
+          fill={fill}
+          fillOpacity={collapsed ? 0.18 : 0.16}
+          stroke={fill}
+          strokeWidth={0.05}
+          strokeLinejoin="round"
+          filter="url(#mx-glow)"
+        />
 
         {/* transformed basis vectors = columns of M */}
-        <Arrow x={a} y={-c} color="#ef4444" label="î→" />
-        <Arrow x={b} y={-d} color="#3b82f6" label="ĵ→" />
+        <Arrow x={a} y={-c} color="#fb7185" label="î→" />
+        <Arrow x={b} y={-d} color="#38bdf8" label="ĵ→" />
 
         {/* draggable tips */}
-        <Handle cx={a} cy={-c} color="#ef4444" onPointerDown={onTipDown(0)} />
-        <Handle cx={b} cy={-d} color="#3b82f6" onPointerDown={onTipDown(1)} />
+        <Handle cx={a} cy={-c} color="#fb7185" onPointerDown={onTipDown(0)} />
+        <Handle cx={b} cy={-d} color="#38bdf8" onPointerDown={onTipDown(1)} />
       </svg>
 
       <div className="mt-3 flex flex-wrap items-start gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-400">M =</span>
+          <span className="font-mono text-sm text-cyan-300">M =</span>
           <div className="grid grid-cols-2 gap-1">
             <NumInput value={a} onChange={setEntry(0)} />
             <NumInput value={b} onChange={setEntry(1)} />
@@ -151,11 +168,14 @@ export function Matrix({ props }: { props: MatrixProps }) {
         </div>
 
         {showDeterminant && (
-          <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
+          <div className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-xs">
             <div className="text-slate-500">
-              det(M) = <span className="font-mono text-slate-800">{det.toFixed(2)}</span>
+              det(M) = <span className="font-mono text-slate-200">{det.toFixed(2)}</span>
             </div>
-            <div className="mt-1 font-medium" style={{ color: collapsed ? '#94a3b8' : reversed ? '#e11d48' : '#4f46e5' }}>
+            <div
+              className="mt-1 font-medium"
+              style={{ color: collapsed ? '#94a3b8' : reversed ? '#fb7185' : '#22d3ee' }}
+            >
               {collapsed ? '降维：图形被压扁成一条线（奇异矩阵）' : reversed ? `镜像翻转，面积缩放 ${Math.abs(det).toFixed(2)}×` : `保持定向，面积缩放 ${Math.abs(det).toFixed(2)}×`}
             </div>
           </div>
@@ -166,22 +186,22 @@ export function Matrix({ props }: { props: MatrixProps }) {
             <button
               key={p.label}
               onClick={() => setM(p.m)}
-              className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+              className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-200"
             >
               {p.label}
             </button>
           ))}
           <button
             onClick={() => setM(IDENTITY)}
-            className="rounded-md bg-slate-100 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-200"
+            className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300 hover:bg-white/10"
           >
             重置
           </button>
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-slate-500">
-        拖动红色 î→、蓝色 ĵ→ 两个箭头的端点——它们就是矩阵的两列。被填充的箭头图形是单位形状经过 M 变换后的结果。
+      <p className="mt-2 text-xs text-slate-400">
+        拖动红色 î→、青色 ĵ→ 两个箭头端点——它们就是矩阵的两列。被填充的图形是单位形状经 M 变换后的结果。
       </p>
     </div>
   )
@@ -191,10 +211,10 @@ function Grid() {
   const lines = []
   for (let i = -5; i <= 5; i++) {
     lines.push(
-      <line key={`v${i}`} x1={i} y1={-5} x2={i} y2={5} stroke={i === 0 ? '#cbd5e1' : '#f1f5f9'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
+      <line key={`v${i}`} x1={i} y1={-5} x2={i} y2={5} stroke={i === 0 ? 'rgba(129,140,248,0.3)' : 'rgba(148,163,184,0.07)'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
     )
     lines.push(
-      <line key={`h${i}`} x1={-5} y1={i} x2={5} y2={i} stroke={i === 0 ? '#cbd5e1' : '#f1f5f9'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
+      <line key={`h${i}`} x1={-5} y1={i} x2={5} y2={i} stroke={i === 0 ? 'rgba(129,140,248,0.3)' : 'rgba(148,163,184,0.07)'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
     )
   }
   return <g>{lines}</g>
@@ -248,7 +268,7 @@ function NumInput({ value, onChange }: { value: number; onChange: (v: number) =>
       step={0.1}
       value={Number.isFinite(value) ? value : 0}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-14 rounded border border-slate-200 px-1.5 py-1 text-center text-xs tabular-nums focus:border-indigo-400 focus:outline-none"
+      className="w-14 rounded border border-white/10 bg-slate-900 px-1.5 py-1 text-center text-xs tabular-nums text-slate-200 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20"
     />
   )
 }

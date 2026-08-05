@@ -82,27 +82,27 @@ export default function App() {
 
   return (
     <div className="min-h-full">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-slate-950/60 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <button
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 md:hidden"
+            className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 md:hidden"
             onClick={() => setSidebarOpen((o) => !o)}
             aria-label="菜单"
           >
             ☰
           </button>
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 text-slate-950 shadow-[0_0_22px_-4px_rgba(99,102,241,0.8)]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 20 L12 4 L20 20" />
-                <circle cx="12" cy="20" r="1.6" fill="currentColor" />
+                <circle cx="12" cy="20" r="1.7" fill="currentColor" />
               </svg>
             </div>
             <div>
-              <div className="text-sm font-semibold leading-tight tracking-tight">
-                <span className="font-mono text-indigo-500">❯</span> LiveBlog
+              <div className="text-sm font-semibold leading-tight tracking-tight text-slate-100">
+                <span className="font-mono text-cyan-400">❯</span> LiveBlog
               </div>
-              <div className="font-mono text-[11px] leading-tight text-slate-400">interactive · writing</div>
+              <div className="font-mono text-[10px] uppercase leading-tight tracking-[0.18em] text-slate-500">interactive · writing</div>
             </div>
           </div>
 
@@ -111,13 +111,13 @@ export default function App() {
               <>
                 <button
                   onClick={() => setMode('read')}
-                  className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                  className="rounded-md border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5"
                 >
                   取消
                 </button>
                 <button
                   onClick={save}
-                  className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-4 py-1.5 text-sm font-semibold text-slate-950 shadow-[0_0_18px_-6px_rgba(99,102,241,0.9)] transition hover:brightness-110"
                 >
                   保存
                 </button>
@@ -125,7 +125,7 @@ export default function App() {
             ) : (
               <button
                 onClick={() => setMode('edit')}
-                className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+                className="rounded-md border border-indigo-400/40 bg-indigo-500/10 px-4 py-1.5 text-sm font-medium text-indigo-200 transition hover:border-indigo-400/70 hover:bg-indigo-500/20"
               >
                 ✎ 编辑
               </button>
@@ -134,7 +134,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-5xl gap-6 px-4 py-6">
+      <div className="mx-auto flex max-w-6xl gap-7 px-4 py-7">
         {/* Sidebar */}
         <aside
           className={`${
@@ -144,7 +144,7 @@ export default function App() {
           <div className="sticky top-20 space-y-3">
             <button
               onClick={createArticle}
-              className="w-full rounded-md border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600 hover:border-indigo-400 hover:text-indigo-600"
+              className="w-full rounded-lg border border-dashed border-indigo-400/40 bg-indigo-500/5 px-3 py-2 text-sm font-medium text-indigo-200 transition hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-100"
             >
               + 新建文章
             </button>
@@ -152,10 +152,10 @@ export default function App() {
               {articles.map((a) => (
                 <div
                   key={a.id}
-                  className={`group cursor-pointer rounded-lg border-l-2 px-3 py-2 text-sm transition-colors ${
+                  className={`group cursor-pointer rounded-lg border-l-2 px-3 py-2 text-sm transition-all ${
                     a.id === currentId
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-transparent text-slate-700 hover:bg-slate-50'
+                      ? 'border-cyan-400 bg-gradient-to-r from-indigo-500/15 to-transparent text-slate-100 shadow-[inset_0_0_20px_-12px_rgba(99,102,241,0.6)]'
+                      : 'border-transparent text-slate-400 hover:border-white/10 hover:bg-white/5 hover:text-slate-200'
                   }`}
                   onClick={() => {
                     setCurrentId(a.id)
@@ -164,10 +164,10 @@ export default function App() {
                   }}
                 >
                   <div className="line-clamp-2 font-medium leading-snug">{a.title || '无标题'}</div>
-                  <div className="mt-0.5 flex items-center justify-between text-[11px] text-slate-400">
-                    <span>{new Date(a.updatedAt).toLocaleDateString()}</span>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="font-mono">{new Date(a.updatedAt).toLocaleDateString()}</span>
                     <button
-                      className="opacity-0 group-hover:opacity-100 hover:text-red-500"
+                      className="opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
                       onClick={(e) => {
                         e.stopPropagation()
                         removeArticle(a.id)
@@ -218,18 +218,30 @@ function readingTime(a: Article): number {
 function ReadView({ article }: { article: Article }) {
   return (
     <article>
-      <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-900 md:text-4xl">{article.title}</h1>
-      {article.description && (
-        <p className="mt-3 text-lg text-slate-500">{article.description}</p>
-      )}
-      <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-xs text-slate-400">
-        <span>{new Date(article.updatedAt).toLocaleDateString()}</span>
-        <span>·</span>
-        <span>{article.blocks.length} 个段落</span>
-        <span>·</span>
-        <span>⏱ 约 {readingTime(article)} 分钟</span>
+      <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-indigo-300">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+        Interactive Article
       </div>
-      <div className="my-8 h-px bg-slate-200" />
+      <h1 className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-3xl font-bold leading-tight tracking-tight text-transparent md:text-[2.6rem]">
+        {article.title}
+      </h1>
+      {article.description && (
+        <p className="mt-4 text-lg leading-relaxed text-slate-400">{article.description}</p>
+      )}
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-slate-500">
+        <span className="text-slate-400">{new Date(article.updatedAt).toLocaleDateString()}</span>
+        <span className="text-slate-700">/</span>
+        <span>{article.blocks.length} 个段落</span>
+        <span className="text-slate-700">/</span>
+        <span>约 {readingTime(article)} 分钟阅读</span>
+      </div>
+      <div
+        className="my-9 h-px"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent, rgba(129,140,248,0.5), rgba(34,211,238,0.35), transparent)',
+        }}
+      />
       <div>
         {article.blocks.map((b) => (
           <BlockRenderer key={b.id} block={b} />
@@ -263,13 +275,13 @@ function EditView({
         value={draft.title}
         onChange={(e) => onChange({ ...draft, title: e.target.value })}
         placeholder="文章标题"
-        className="w-full bg-transparent text-3xl font-bold leading-tight text-slate-900 outline-none placeholder:text-slate-300"
+        className="w-full bg-transparent text-3xl font-bold leading-tight text-slate-100 outline-none placeholder:text-slate-600"
       />
       <input
         value={draft.description}
         onChange={(e) => onChange({ ...draft, description: e.target.value })}
         placeholder="一句话简介（可选）"
-        className="w-full bg-transparent text-base text-slate-500 outline-none placeholder:text-slate-300"
+        className="w-full bg-transparent text-base text-slate-400 outline-none placeholder:text-slate-600"
       />
 
       <div className="space-y-3">
@@ -289,26 +301,26 @@ function EditView({
       <div className="relative">
         <button
           onClick={() => setAdding((v) => !v)}
-          className="w-full rounded-xl border-2 border-dashed border-slate-200 py-3 text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
+          className="w-full rounded-xl border-2 border-dashed border-indigo-400/30 bg-indigo-500/5 py-3 text-sm font-medium text-indigo-200 transition hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-100"
         >
           + 添加段落
         </button>
         {adding && (
-          <div className="mt-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+          <div className="mt-2 rounded-xl border border-white/10 bg-slate-900/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
             <button
               onClick={() => {
                 onAddBlock('text')
                 setAdding(false)
               }}
-              className="mb-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-50"
+              className="mb-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-slate-200 hover:bg-white/5"
             >
               <span className="text-xl">📝</span>
               <span>
                 <span className="block text-sm font-medium">文字段落</span>
-                <span className="block text-xs text-slate-400">Markdown 文字、标题、列表、代码</span>
+                <span className="block text-xs text-slate-500">Markdown 文字、标题、列表、代码</span>
               </span>
             </button>
-            <div className="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+            <div className="mb-1 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-indigo-400/80">
               交互组件
             </div>
             <div className="grid gap-1">
@@ -319,12 +331,12 @@ function EditView({
                     onAddBlock('widget', w.type)
                     setAdding(false)
                   }}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-50"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-slate-200 hover:bg-white/5"
                 >
                   <span className="text-xl">{w.icon}</span>
                   <span>
                     <span className="block text-sm font-medium">{w.label}</span>
-                    <span className="block text-xs text-slate-400">{w.description}</span>
+                    <span className="block text-xs text-slate-500">{w.description}</span>
                   </span>
                 </button>
               ))}

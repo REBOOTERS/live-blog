@@ -176,10 +176,26 @@ export function Backprop({ props }: { props: BackpropProps }) {
     const xOf = (x: number) => PAD + ((x + 1) / 2) * (PLOT_W - 2 * PAD)
     const yOf = (y: number) => PLOT_H / 2 - (y / 1.3) * (PLOT_H / 2 - 16)
 
-    // bg + axes
-    ctx.fillStyle = '#f8fafc'
+    // bg
+    ctx.fillStyle = '#0a0f1e'
     ctx.fillRect(PAD, 12, PLOT_W - 2 * PAD, PLOT_H - 24)
-    ctx.strokeStyle = '#e2e8f0'
+    // grid
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
+    ctx.lineWidth = 1
+    for (let gx = -1; gx <= 1; gx += 0.5) {
+      ctx.beginPath()
+      ctx.moveTo(xOf(gx), 12)
+      ctx.lineTo(xOf(gx), PLOT_H - 12)
+      ctx.stroke()
+    }
+    for (let gy = -1; gy <= 1; gy += 0.5) {
+      ctx.beginPath()
+      ctx.moveTo(PAD, yOf(gy))
+      ctx.lineTo(PLOT_W - PAD, yOf(gy))
+      ctx.stroke()
+    }
+    // axes
+    ctx.strokeStyle = 'rgba(129,140,248,0.3)'
     ctx.beginPath()
     ctx.moveTo(PAD, yOf(0))
     ctx.lineTo(PLOT_W - PAD, yOf(0))
@@ -188,7 +204,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
     ctx.stroke()
 
     // target
-    ctx.strokeStyle = '#94a3b8'
+    ctx.strokeStyle = 'rgba(148,163,184,0.7)'
     ctx.lineWidth = 2
     ctx.setLineDash([4, 4])
     ctx.beginPath()
@@ -203,8 +219,10 @@ export function Backprop({ props }: { props: BackpropProps }) {
 
     // prediction
     const w = weightsRef.current
-    ctx.strokeStyle = '#4f46e5'
+    ctx.strokeStyle = '#22d3ee'
     ctx.lineWidth = 2.5
+    ctx.shadowColor = 'rgba(34,211,238,0.5)'
+    ctx.shadowBlur = 8
     ctx.beginPath()
     for (let i = 0; i < xs.length; i++) {
       const px = xOf(xs[i])
@@ -213,6 +231,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
       else ctx.lineTo(px, py)
     }
     ctx.stroke()
+    ctx.shadowBlur = 0
 
     drawLossChart()
   }
@@ -231,31 +250,55 @@ export function Backprop({ props }: { props: BackpropProps }) {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, CW, CH)
-    ctx.fillStyle = '#f8fafc'
+    ctx.fillStyle = '#0a0f1e'
     ctx.fillRect(0, 0, CW, CH)
+    ctx.strokeStyle = 'rgba(148,163,184,0.1)'
+    ctx.lineWidth = 1
+    for (let gy = 0.25; gy < 1; gy += 0.25) {
+      ctx.beginPath()
+      ctx.moveTo(0, gy * CH)
+      ctx.lineTo(CW, gy * CH)
+      ctx.stroke()
+    }
     const hist = historyRef.current
     if (hist.length < 2) {
-      ctx.fillStyle = '#94a3b8'
-      ctx.font = '11px ui-sans-serif, system-ui'
-      ctx.fillText('损失曲线', 8, 16)
+      ctx.fillStyle = '#64748b'
+      ctx.font = '11px ui-monospace, monospace'
+      ctx.fillText('loss →', 8, 18)
       return
     }
     const max = Math.max(...hist)
     const min = Math.min(...hist)
     const range = max - min || 1
-    ctx.strokeStyle = '#6366f1'
+    // gradient-filled loss curve
+    const grad = ctx.createLinearGradient(0, 0, 0, CH)
+    grad.addColorStop(0, 'rgba(34,211,238,0.35)')
+    grad.addColorStop(1, 'rgba(34,211,238,0)')
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    hist.forEach((v, i) => {
+      const x = (i / (hist.length - 1)) * CW
+      const y = CH - 4 - ((v - min) / range) * (CH - 16)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+    ctx.lineTo(CW, CH)
+    ctx.lineTo(0, CH)
+    ctx.closePath()
+    ctx.fill()
+    ctx.strokeStyle = '#22d3ee'
     ctx.lineWidth = 1.5
     ctx.beginPath()
     hist.forEach((v, i) => {
       const x = (i / (hist.length - 1)) * CW
-      const y = CH - 4 - ((v - min) / range) * (CH - 12)
+      const y = CH - 4 - ((v - min) / range) * (CH - 16)
       if (i === 0) ctx.moveTo(x, y)
       else ctx.lineTo(x, y)
     })
     ctx.stroke()
-    ctx.fillStyle = '#64748b'
-    ctx.font = '10px ui-sans-serif, system-ui'
-    ctx.fillText('损失 (log 未缩放)', 6, 12)
+    ctx.fillStyle = '#818cf8'
+    ctx.font = '10px ui-monospace, monospace'
+    ctx.fillText('loss', 6, 12)
   }
 
   const reset = () => {
@@ -270,11 +313,10 @@ export function Backprop({ props }: { props: BackpropProps }) {
   const maxAbsW = Math.max(0.01, ...w.w1, ...w.w2, ...w.b1.map((v) => Math.abs(v)))
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="lb-surface">
       <canvas
         ref={plotRef}
-        style={{ width: '100%', aspectRatio: `${PLOT_W} / ${PLOT_H}` }}
-        className="block"
+        style={{ width: '100%', aspectRatio: `${PLOT_W} / ${PLOT_H}`, borderRadius: 8 }}
       />
 
       {/* controls */}
@@ -282,7 +324,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
         <select
           value={target}
           onChange={(e) => setTarget(e.target.value as TargetId)}
-          className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm"
+          className="rounded-md border border-white/10 bg-slate-900 px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-cyan-400/60"
         >
           {TARGETS.map((t) => (
             <option key={t.id} value={t.id}>
@@ -292,7 +334,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
         </select>
         <button
           onClick={() => setPlaying((p) => !p)}
-          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+          className="rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-3 py-1.5 text-sm font-semibold text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] transition hover:brightness-110"
         >
           {playing ? '⏸ 暂停' : '▶ 训练'}
         </button>
@@ -301,19 +343,19 @@ export function Backprop({ props }: { props: BackpropProps }) {
             stepOnce()
             setEpoch((e) => e + 1)
           }}
-          className="rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
         >
           单步
         </button>
         <button
           onClick={reset}
-          className="rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
         >
           ↺ 重置
         </button>
-        <div className="ml-auto flex items-center gap-3 text-xs text-slate-500">
-          <span className="tabular-nums">epoch {epoch}</span>
-          <span className="tabular-nums">loss {lossDisplay.toFixed(4)}</span>
+        <div className="ml-auto flex items-center gap-3 font-mono text-xs text-slate-500">
+          <span className="tabular-nums text-slate-400">epoch {epoch}</span>
+          <span className="tabular-nums text-cyan-300">loss {lossDisplay.toFixed(4)}</span>
         </div>
       </div>
 
@@ -324,10 +366,9 @@ export function Backprop({ props }: { props: BackpropProps }) {
         <div>
           <canvas
             ref={lossRefCanvas}
-            style={{ width: '100%', aspectRatio: '200 / 110' }}
-            className="block w-full rounded-lg"
+            style={{ width: '100%', aspectRatio: '200 / 110', borderRadius: 8 }}
           />
-          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
+          <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-400">
             <label className="flex items-center gap-2">
               <span className="w-12 shrink-0">隐藏层</span>
               <input
@@ -337,9 +378,9 @@ export function Backprop({ props }: { props: BackpropProps }) {
                 step={1}
                 value={hidden}
                 onChange={(e) => setHidden(Number(e.target.value))}
-                className="flex-1 accent-indigo-600"
+                className="flex-1"
               />
-              <span className="w-4 text-right tabular-nums">{hidden}</span>
+              <span className="w-4 text-right font-mono tabular-nums text-slate-300">{hidden}</span>
             </label>
             <label className="flex items-center gap-2">
               <span className="w-12 shrink-0">学习率</span>
@@ -350,15 +391,16 @@ export function Backprop({ props }: { props: BackpropProps }) {
                 step={0.005}
                 value={learningRate}
                 onChange={(e) => setLearningRate(Number(e.target.value))}
-                className="flex-1 accent-indigo-600"
+                className="flex-1"
               />
+              <span className="w-10 text-right font-mono tabular-nums text-slate-300">{learningRate.toFixed(3)}</span>
             </label>
           </div>
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-slate-500">
-        灰色虚线是目标函数，蓝色实线是这个 1→{hidden}→1 小网络的当前输出。连线颜色表示权重正负（蓝正红负），粗细表示权重大小——训练时观察误差如何沿网络反向传播并更新这些连线。
+      <p className="mt-2 text-xs text-slate-400">
+        灰色虚线是目标函数，青色实线是这个 1→{hidden}→1 小网络的当前输出。连线颜色表示权重正负（青正红负），粗细表示权重大小——训练时观察误差如何沿网络反向传播并更新这些连线。
       </p>
     </div>
   )
@@ -376,7 +418,7 @@ function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
 
   const edge = (weight: number, x1: number, y1: number, x2: number, y2: number, key: string) => {
     const norm = Math.abs(weight) / maxAbsW
-    const color = weight >= 0 ? `rgba(79,70,229,${0.25 + norm * 0.7})` : `rgba(239,68,68,${0.25 + norm * 0.7})`
+    const color = weight >= 0 ? `rgba(34,211,238,${0.25 + norm * 0.7})` : `rgba(251,113,133,${0.25 + norm * 0.7})`
     return (
       <line
         key={key}
@@ -391,7 +433,11 @@ function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
   }
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 160 }}>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full rounded-lg"
+      style={{ maxHeight: 160, background: '#0a0f1e' }}
+    >
       {/* input -> hidden */}
       {hiddenYs.map((hy, i) => edge(w.w1[i], inX, inY, hidX, hy, `i${i}`))}
       {/* hidden -> output */}
@@ -409,12 +455,12 @@ function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
 function Node({ cx, cy, label, bias }: { cx: number; cy: number; label: string; bias?: number }) {
   return (
     <g>
-      <circle cx={cx} cy={cy} r={11} fill="white" stroke="#475569" strokeWidth={1.5} />
-      <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={9} fill="#334155" fontWeight={600}>
+      <circle cx={cx} cy={cy} r={11} fill="#0f172a" stroke="#22d3ee" strokeWidth={1.5} />
+      <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={9} fill="#e2e8f0" fontWeight={600}>
         {label}
       </text>
       {bias !== undefined && Math.abs(bias) > 0.05 && (
-        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fill="#94a3b8">
+        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fill="#64748b" fontFamily="ui-monospace, monospace">
           b={bias.toFixed(2)}
         </text>
       )}

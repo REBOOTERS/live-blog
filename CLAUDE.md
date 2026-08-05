@@ -148,7 +148,10 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 - 函数组件 + Hooks；不使用 class 组件。
 - 文件内组件命名：默认导出组件与具名 WidgetDefinition 导出（如 `PendulumWidget`）。
 - 优先使用 `clsx` 之外的模板字符串做条件 class（项目未引入 clsx）。
-- Tailwind utility 为主，自定义样式仅用于 `.prose-lb` 排版与滚动条。
+- Tailwind utility 为主，自定义样式集中在 `index.css`：`.prose-lb` 排版、`.lb-surface` 卡片、滚动条、range 控件霓虹样式。
+- **整体为深色科技主题**：body 深色渐变 + 径向辉光 + 网格底纹；主色为 indigo (`#6366f1`/`#818cf8`) 与 cyan (`#22d3ee`) 的霓虹渐变。所有 Widget 外层统一用 `.lb-surface`（深色玻璃卡片 + 顶部高光边线），不要用浅色 `bg-white`/`bg-slate-100`。
+- **画布配色约定**：Canvas/SVG 背景用 `#0a0f1e`/`#070b16`，网格用 `rgba(148,163,184,0.08)`、轴线 `rgba(129,140,248,0.3)`；主曲线用 cyan `#22d3ee` + 发光（`shadowBlur` / SVG `feGaussianBlur` glow filter），对照/原始数据用灰色 `rgba(148,163,184,...)`；强调色：红 `#fb7185`、黄 `#fbbf24`、绿 `#34d399`、粉 `#f472b6`。文字用 `#e2e8f0`/`#94a3b8` + 等宽字体显示数值。
+- 所有 Canvas 须处理 HiDPI（DPR scaling），并按 `aspect-ratio` 自适应宽度，保证清晰与尺寸合理。
 - 中文作为界面与文案语言；代码标识符用英文。
 - 不使用第三方图标库，需要时优先内联 SVG 或 emoji。
 - 无注释噪音，只在解释「为什么」而非「做什么」处加注释。
@@ -159,7 +162,7 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 - 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
 - 内置示例共七篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播。localStorage key 已升至 `v4`，迁移逻辑见 `storage.ts`。
-- **2026-08-04 大改版**：① 数学公式改用 KaTeX 真实渲染（新增运行时依赖 `katex`，见上「技术栈」）；② 代码块加语法高亮 + 编辑器窗口栏 + 复制；③ 排序 Widget 在阅读模式新增算法 Tab / 复杂度徽标 / 长度与速度滑块（此前只能在编辑器里切换算法）；④ 抛体 Widget 重写为「朝目标方向拖拽 + 实时预测轨迹」，落地显示射程/最高/飞行时间；⑤ 整体打磨为精致浅色「技术博客」主题（阅读时长、品牌 prompt、代码卡片等）。**localStorage key 升至 `v3`，首次加载非破坏性迁移 v2 数据（刷新内置 demo 文章、保留用户自建文章）**——因为旧的 seed 文案（如抛体「向反方向拖拽」）必须随新交互一起更新，否则说明书与组件行为对不上。
+- **2026-08-05 视觉改版**：整体改为深色霓虹科技主题（indigo→cyan 渐变主色、辉光、网格底纹、`.lb-surface` 卡片），七个 Widget 的画布全部重绘为深色高对比配色并加发光；range 控件自定义霓虹滑块。数学公式用 KaTeX、代码块有语法高亮。新增 Widget 时请遵循上面的「画布配色约定」。
 
 ## 不做的事（避免误解范围）
 

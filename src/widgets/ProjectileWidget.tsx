@@ -161,10 +161,17 @@ export function Projectile({ props }: { props: ProjectileProps }) {
 
     const { showVelocity, trail: showTrail, gravity: g, airDrag: d } = propsRef.current
 
+    // background
+    const bg = ctx.createLinearGradient(0, 0, 0, H)
+    bg.addColorStop(0, '#0a0f1e')
+    bg.addColorStop(1, '#070b16')
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
+
     // ground
-    ctx.fillStyle = '#f1f5f9'
+    ctx.fillStyle = 'rgba(34,211,238,0.06)'
     ctx.fillRect(0, ORIGIN.y, W, H - ORIGIN.y)
-    ctx.strokeStyle = '#cbd5e1'
+    ctx.strokeStyle = 'rgba(129,140,248,0.5)'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, ORIGIN.y)
@@ -172,7 +179,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     ctx.stroke()
 
     // grid
-    ctx.strokeStyle = '#eef2f7'
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
     for (let mx = 0; mx * SCALE < W; mx += 5) {
       ctx.beginPath()
       ctx.moveTo(ORIGIN.x + mx * SCALE, 0)
@@ -184,8 +191,10 @@ export function Projectile({ props }: { props: ProjectileProps }) {
 
     // trail
     if (showTrail && s.trail.length > 1) {
-      ctx.strokeStyle = 'rgba(79, 70, 229, 0.35)'
+      ctx.strokeStyle = 'rgba(34,211,238,0.5)'
       ctx.lineWidth = 2
+      ctx.shadowColor = 'rgba(34,211,238,0.6)'
+      ctx.shadowBlur = 8
       ctx.beginPath()
       s.trail.forEach((pt, i) => {
         const x = ORIGIN.x + pt.x * SCALE
@@ -194,6 +203,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
         else ctx.lineTo(x, y)
       })
       ctx.stroke()
+      ctx.shadowBlur = 0
     }
 
     const aim = aimRef.current
@@ -202,7 +212,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     if (aim) {
       const pts = predict(aim.vx, aim.vy, g, d)
       if (pts.length > 1) {
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.9)'
+        ctx.strokeStyle = 'rgba(148,163,184,0.7)'
         ctx.lineWidth = 1.5
         ctx.setLineDash([4, 5])
         ctx.beginPath()
@@ -231,11 +241,11 @@ export function Projectile({ props }: { props: ProjectileProps }) {
         ORIGIN.y,
         ORIGIN.x + (aim.vx / aim.speed) * aimLen,
         ORIGIN.y - (aim.vy / aim.speed) * aimLen,
-        '#4f46e5',
+        '#22d3ee',
       )
       const angle = (Math.atan2(aim.vy, aim.vx) * 180) / Math.PI
-      ctx.fillStyle = '#475569'
-      ctx.font = '12px ui-sans-serif, system-ui'
+      ctx.fillStyle = '#a5b4fc'
+      ctx.font = '12px ui-monospace, monospace'
       ctx.fillText(`v₀ = ${aim.speed.toFixed(1)} m/s`, 12, 22)
       ctx.fillText(`α = ${angle.toFixed(0)}°`, 12, 40)
     }
@@ -243,38 +253,44 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     // ball
     const px = ORIGIN.x + s.x * SCALE
     const py = ORIGIN.y - s.y * SCALE
-    ctx.fillStyle = '#4f46e5'
+    const ballGrad = ctx.createRadialGradient(px - 2, py - 2, 1, px, py, 8)
+    ballGrad.addColorStop(0, '#a5b4fc')
+    ballGrad.addColorStop(1, '#6366f1')
+    ctx.fillStyle = ballGrad
+    ctx.shadowColor = 'rgba(99,102,241,0.7)'
+    ctx.shadowBlur = 14
     ctx.beginPath()
     ctx.arc(px, py, 8, 0, Math.PI * 2)
     ctx.fill()
+    ctx.shadowBlur = 0
 
     // velocity vectors during flight
     if (showVelocity && s.flying) {
-      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py, '#ef4444', 'vx')
-      drawArrow(ctx, px, py, px, py - s.vy * SCALE * 0.3, '#10b981', 'vy')
-      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py - s.vy * SCALE * 0.3, '#1e293b')
+      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py, '#fb7185', 'vx')
+      drawArrow(ctx, px, py, px, py - s.vy * SCALE * 0.3, '#34d399', 'vy')
+      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py - s.vy * SCALE * 0.3, '#e2e8f0')
     }
 
     // origin marker
-    ctx.fillStyle = '#0f172a'
+    ctx.fillStyle = '#cbd5e1'
     ctx.beginPath()
     ctx.arc(ORIGIN.x, ORIGIN.y, 4, 0, Math.PI * 2)
     ctx.fill()
 
     if (!s.flying && !aim && !s.landed) {
-      ctx.fillStyle = '#94a3b8'
+      ctx.fillStyle = '#64748b'
       ctx.font = '12px ui-sans-serif, system-ui'
       ctx.fillText('从发射点朝目标方向拖拽，松手发射', 12, H - 14)
     }
     if (s.flying) {
-      ctx.fillStyle = '#475569'
-      ctx.font = '12px ui-sans-serif, system-ui'
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '12px ui-monospace, monospace'
       ctx.fillText(`x = ${s.x.toFixed(1)} m   y = ${s.y.toFixed(1)} m`, W - 168, 22)
       ctx.fillText(`vx = ${s.vx.toFixed(1)}   vy = ${s.vy.toFixed(1)}`, W - 168, 40)
     }
     if (s.landed) {
-      ctx.fillStyle = '#1e293b'
-      ctx.font = '600 12px ui-sans-serif, system-ui'
+      ctx.fillStyle = '#67e8f9'
+      ctx.font = '600 12px ui-monospace, monospace'
       ctx.fillText(
         `射程 ${s.range.toFixed(1)} m · 最高 ${s.maxH.toFixed(1)} m · 飞行 ${s.flightTime.toFixed(2)} s`,
         12,
@@ -284,7 +300,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
   })
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="lb-surface">
       <canvas
         ref={canvasRef}
         onPointerDown={onPointerDown}
@@ -292,12 +308,12 @@ export function Projectile({ props }: { props: ProjectileProps }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         style={{ width: '100%', aspectRatio: `${W} / ${H}`, touchAction: 'none' }}
-        className="block cursor-crosshair touch-none"
+        className="cursor-crosshair touch-none"
       />
       <div className="mt-2 flex justify-end">
         <button
           onClick={reset}
-          className="rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
         >
           ↺ 重置
         </button>

@@ -84,8 +84,15 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
 
-    // background grid
-    ctx.strokeStyle = '#eef2f7'
+    // background
+    const bg = ctx.createLinearGradient(0, 0, 0, H)
+    bg.addColorStop(0, '#0a0f1e')
+    bg.addColorStop(1, '#070b16')
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
+
+    // grid
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
     ctx.lineWidth = 1
     for (let x = 0; x < W; x += 24) {
       ctx.beginPath()
@@ -100,7 +107,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     const by = PIVOT.y + L * Math.cos(theta)
 
     // trail arc
-    ctx.strokeStyle = '#c7d2fe'
+    ctx.strokeStyle = 'rgba(129,140,248,0.35)'
     ctx.setLineDash([4, 4])
     ctx.beginPath()
     ctx.arc(PIVOT.x, PIVOT.y, L, Math.PI / 2 - 0.9, Math.PI / 2 + 0.9)
@@ -108,7 +115,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     ctx.setLineDash([])
 
     // rod
-    ctx.strokeStyle = '#475569'
+    ctx.strokeStyle = '#64748b'
     ctx.lineWidth = 3
     ctx.beginPath()
     ctx.moveTo(PIVOT.x, PIVOT.y)
@@ -116,7 +123,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     ctx.stroke()
 
     // pivot
-    ctx.fillStyle = '#1e293b'
+    ctx.fillStyle = '#cbd5e1'
     ctx.beginPath()
     ctx.arc(PIVOT.x, PIVOT.y, 6, 0, Math.PI * 2)
     ctx.fill()
@@ -128,35 +135,40 @@ export function Pendulum({ props }: { props: PendulumProps }) {
       (L / 100) * propsRef.current.gravity * (1 - Math.cos(theta))
     const r = 18
     const grad = ctx.createRadialGradient(bx - 5, by - 5, 2, bx, by, r)
-    grad.addColorStop(0, '#818cf8')
-    grad.addColorStop(1, '#4338ca')
+    grad.addColorStop(0, '#a5b4fc')
+    grad.addColorStop(1, '#6366f1')
     ctx.fillStyle = grad
+    ctx.shadowColor = 'rgba(99,102,241,0.6)'
+    ctx.shadowBlur = 16
     ctx.beginPath()
     ctx.arc(bx, by, r, 0, Math.PI * 2)
     ctx.fill()
+    ctx.shadowBlur = 0
 
     // angle readout near pivot
-    ctx.fillStyle = '#334155'
-    ctx.font = '13px ui-sans-serif, system-ui'
+    ctx.fillStyle = '#cbd5e1'
+    ctx.font = '13px ui-monospace, monospace'
     const deg = ((theta * 180) / Math.PI).toFixed(1)
     ctx.fillText(`θ = ${deg}°`, PIVOT.x + 14, PIVOT.y - 8)
 
     if (showEnergy) {
-      ctx.fillStyle = '#475569'
-      ctx.fillText(`ω = ${omegaRef.current.toFixed(2)} rad/s`, 16, 24)
-      ctx.fillText(`E ≈ ${energy.toFixed(3)}（守恒演示）`, 16, 44)
+      ctx.fillStyle = '#818cf8'
+      ctx.font = '12px ui-monospace, monospace'
+      ctx.fillText(`ω = ${omegaRef.current.toFixed(2)} rad/s`, 16, 26)
+      ctx.fillStyle = '#94a3b8'
+      ctx.fillText(`E ≈ ${energy.toFixed(3)}（守恒演示）`, 16, 46)
     }
 
     // hint
     if (Math.abs(omegaRef.current) < 0.02 && !draggingRef.current) {
-      ctx.fillStyle = '#94a3b8'
+      ctx.fillStyle = '#64748b'
       ctx.font = '12px ui-sans-serif, system-ui'
       ctx.fillText('拖动小球设定角度，松手开始摆动', 16, H - 16)
     }
   })
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="lb-surface">
       <canvas
         ref={canvasRef}
         onPointerDown={onPointerDown}
@@ -164,7 +176,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         style={{ width: '100%', aspectRatio: `${W} / ${H}`, touchAction: 'none' }}
-        className="block cursor-grab touch-none active:cursor-grabbing"
+        className="cursor-grab touch-none active:cursor-grabbing"
       />
     </div>
   )

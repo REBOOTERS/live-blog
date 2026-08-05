@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -14,34 +14,134 @@ body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+  color: #cbd5e1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  background-color: #060912;
+  background-image:
+    radial-gradient(900px 520px at 12% -8%, rgba(79, 70, 229, 0.22), transparent 60%),
+    radial-gradient(820px 480px at 92% 0%, rgba(34, 211, 238, 0.14), transparent 55%),
+    linear-gradient(180deg, #070b16 0%, #050810 100%);
+  background-attachment: fixed;
 }
 
-/* Subtle scrollbar */
+/* Faint technical grid overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 80%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: rgba(129, 140, 248, 0.32);
+  color: #fff;
+}
+
+/* Scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: rgba(129, 140, 248, 0.4) transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: linear-gradient(180deg, rgba(129, 140, 248, 0.5), rgba(34, 211, 238, 0.35));
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(129, 140, 248, 0.75), rgba(34, 211, 238, 0.55));
+  background-clip: padding-box;
+}
+
+/* Range input — neon thumb/track */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #818cf8, #22d3ee);
+  border: 2px solid #0b1020;
+  box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.5), 0 0 10px rgba(99, 102, 241, 0.6);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #818cf8, #22d3ee);
+  border: 2px solid #0b1020;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+  cursor: pointer;
+}
+input[type="number"],
+input[type="text"],
+select,
+textarea {
+  color-scheme: dark;
+}
+
+/* ============================================================
+   Reusable surface — widget cards, panels
+   ============================================================ */
+.lb-surface {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid rgba(129, 140, 248, 0.18);
+  background:
+    linear-gradient(180deg, rgba(20, 27, 48, 0.85), rgba(9, 13, 26, 0.92));
+  padding: 1rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 18px 40px -22px rgba(2, 6, 23, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+.lb-surface::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.7), rgba(34, 211, 238, 0.5), transparent);
+}
+.lb-surface canvas,
+.lb-surface svg {
+  display: block;
+  border-radius: 8px;
 }
 
 /* ============================================================
    Prose — rendered markdown blocks (.prose-lb)
-   Unlayered rules win over Tailwind utilities, so these are
-   authoritative for article typography.
    ============================================================ */
 .prose-lb {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-  color: #334155;
+  color: #b6c2d9;
   font-size: 1.0625rem;
 }
 .prose-lb > p:first-child,
@@ -52,7 +152,7 @@ body {
 }
 .prose-lb p {
   margin: 1.15em 0;
-  line-height: 1.8;
+  line-height: 1.85;
 }
 .prose-lb h1 {
   font-size: 1.75rem;
@@ -60,22 +160,25 @@ body {
   margin: 1.4em 0 0.5em;
   line-height: 1.3;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: #f1f5f9;
 }
 .prose-lb h2 {
   font-size: 1.4rem;
   font-weight: 700;
-  margin: 1.6em 0 0.5em;
+  margin: 1.8em 0 0.5em;
   line-height: 1.3;
   letter-spacing: -0.018em;
-  color: #0f172a;
+  color: #f8fafc;
+  padding-left: 0.7rem;
+  border-left: 3px solid;
+  border-image: linear-gradient(180deg, #818cf8, #22d3ee) 1;
 }
 .prose-lb h3 {
   font-size: 1.15rem;
   font-weight: 600;
   margin: 1.3em 0 0.4em;
   letter-spacing: -0.01em;
-  color: #0f172a;
+  color: #e2e8f0;
 }
 .prose-lb ul {
   list-style: disc;
@@ -88,45 +191,49 @@ body {
   margin: 1em 0;
 }
 .prose-lb li {
-  margin: 0.35em 0;
-  line-height: 1.75;
+  margin: 0.4em 0;
+  line-height: 1.8;
 }
 .prose-lb li::marker {
-  color: #94a3b8;
+  color: #818cf8;
 }
 .prose-lb code {
-  background: #eef2ff;
-  color: #4338ca;
-  padding: 0.12em 0.4em;
+  background: rgba(99, 102, 241, 0.16);
+  color: #a5b4fc;
+  padding: 0.14em 0.45em;
   border-radius: 0.35em;
   font-size: 0.88em;
+  border: 1px solid rgba(99, 102, 241, 0.2);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .prose-lb a {
-  color: #4f46e5;
-  text-decoration: underline;
+  color: #22d3ee;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.4);
   text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
-  transition: color 0.15s;
+  transition: color 0.15s, border-color 0.15s;
 }
 .prose-lb a:hover {
-  color: #4338ca;
+  color: #67e8f9;
+  border-color: rgba(103, 232, 249, 0.8);
 }
 .prose-lb blockquote {
-  border-left: 3px solid #a5b4fc;
-  padding: 0.2em 0 0.2em 1em;
-  color: #475569;
+  border-left: 3px solid;
+  border-image: linear-gradient(180deg, #818cf8, #22d3ee) 1;
+  padding: 0.3em 0 0.3em 1.1em;
+  color: #94a3b8;
   margin: 1.4em 0;
-  font-style: italic;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), transparent);
 }
 .prose-lb strong {
   font-weight: 650;
-  color: #1e293b;
+  color: #f1f5f9;
 }
 .prose-lb hr {
   border: none;
-  border-top: 1px solid #e2e8f0;
-  margin: 2.2em 0;
+  height: 1px;
+  margin: 2.4em 0;
+  background: linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.4), rgba(34, 211, 238, 0.3), transparent);
 }
 
 /* ============================================================
@@ -134,18 +241,18 @@ body {
    ============================================================ */
 .prose-lb .code-card {
   margin: 1.4em 0;
-  border-radius: 0.7em;
+  border-radius: 0.75em;
   overflow: hidden;
-  border: 1px solid #0f172a;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  box-shadow: 0 10px 30px -18px rgba(2, 6, 23, 0.9);
 }
 .prose-lb .code-head {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: #0b1220;
+  background: linear-gradient(180deg, #0d1424, #0a0f1d);
   padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(129, 140, 248, 0.14);
 }
 .prose-lb .code-head .dots {
   display: inline-flex;
@@ -167,31 +274,32 @@ body {
   background: #27c93f;
 }
 .prose-lb .code-lang {
-  color: #94a3b8;
+  color: #818cf8;
   font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .prose-lb .code-copy {
   margin-left: auto;
   color: #94a3b8;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.15);
   border-radius: 0.35em;
   font-size: 11px;
-  padding: 0.15em 0.55em;
+  padding: 0.2em 0.6em;
   cursor: pointer;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 .prose-lb .code-copy:hover {
   color: #e2e8f0;
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(129, 140, 248, 0.5);
+  background: rgba(99, 102, 241, 0.15);
 }
 .prose-lb pre {
-  background: #0b1220;
-  color: #e2e8f0;
-  padding: 0.95em 1.1em;
+  background: #070b16;
+  color: #c8d3e8;
+  padding: 1em 1.15em;
   overflow-x: auto;
   margin: 0;
   font-size: 0.85rem;
@@ -202,10 +310,11 @@ body {
   background: transparent;
   color: inherit;
   padding: 0;
+  border: none;
   font-size: inherit;
 }
 
-/* Syntax token palette (dark card) */
+/* Syntax token palette */
 .prose-lb .tok-keyword {
   color: #c792ea;
 }
@@ -213,11 +322,11 @@ body {
   color: #c3e88d;
 }
 .prose-lb .tok-comment {
-  color: #637777;
+  color: #5b6b8a;
   font-style: italic;
 }
 .prose-lb .tok-number {
-  color: #f78c6c;
+  color: #f7a06c;
 }
 .prose-lb .tok-function {
   color: #82aaff;
@@ -231,21 +340,26 @@ body {
    ============================================================ */
 .prose-lb .math-block {
   margin: 1.4em 0;
-  padding: 0.5em 0;
+  padding: 0.9em 1em;
   overflow-x: auto;
   overflow-y: hidden;
+  border-radius: 0.6em;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.07), rgba(34, 211, 238, 0.04));
+  border: 1px solid rgba(129, 140, 248, 0.14);
 }
 .prose-lb .math-block .katex-display {
   margin: 0;
 }
 .prose-lb .katex {
-  font-size: 1.05em;
+  font-size: 1.08em;
+  color: #e2e8f0;
 }
 .prose-lb .math-error {
-  color: #dc2626;
+  color: #fca5a5;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
-  background: #fef2f2;
-  padding: 0.05em 0.35em;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 0.1em 0.4em;
   border-radius: 0.3em;
 }
