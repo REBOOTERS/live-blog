@@ -66,7 +66,7 @@ live-blog/
         ├── ColorWidget.tsx         # 三原色混色（Canvas，加色/减色 + RGB/HSL）
         ├── SoundWaveWidget.tsx     # 声波与频率（Canvas + Web Audio，真实发声 + 拍频）
         ├── TransformerWidget.tsx   # Transformer 自注意力（SVG，真实 scaled dot-product）
-        └── GraphSearchWidget.tsx   # BFS/DFS 图遍历（SVG，队列/栈前沿 + 生成树）
+        └── GraphSearchWidget.tsx   # BFS/DFS 迷宫遍历（Canvas，彩虹顺序上色 + 前沿 + 最短路径）
 ```
 
 ## 数据模型
