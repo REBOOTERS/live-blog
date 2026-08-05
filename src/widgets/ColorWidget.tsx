@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
+import { prepareCanvas } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface ColorProps {
@@ -58,14 +59,8 @@ export function ColorMix({ props }: { props: ColorProps }) {
   const draw = () => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
-    const dpr = window.devicePixelRatio || 1
-    if (canvas.width !== W * dpr) {
-      canvas.width = W * dpr
-      canvas.height = H * dpr
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     // background
     const bg = ctx.createLinearGradient(0, 0, 0, H)

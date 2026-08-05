@@ -45,6 +45,7 @@ live-blog/
     ├── seed.ts             # 首次启动的示例文章
     ├── lib/
     │   ├── useAnimationFrame.ts  # rAF 循环 hook（dt 秒级，限制最大 0.05s）
+    │   ├── canvas.ts             # prepareCanvas()：HiDPI 清晰绘制（所有 Canvas Widget 必用）
     │   ├── id.ts                 # uid()
     │   ├── markdown.ts           # Markdown 渲染器（含 KaTeX 公式、代码高亮、窗口栏）
     │   └── highlight.ts          # 轻量正则分词器，为代码块生成 tok-* 高亮 HTML
@@ -61,7 +62,10 @@ live-blog/
         ├── ProjectileWidget.tsx    # 抛体运动（Canvas，弹弓式拖拽）
         ├── FourierWidget.tsx       # 傅里叶变换（Canvas，手绘信号 + DFT 重建 + 频谱）
         ├── MatrixWidget.tsx        # 矩阵变换（SVG，拖动两列基向量 + 行列式）
-        └── BackpropWidget.tsx      # 反向传播（Canvas，真实 tanh MLP 训练 + 权重图）
+        ├── BackpropWidget.tsx      # 反向传播（Canvas，真实 tanh MLP 训练 + 权重图）
+        ├── ColorWidget.tsx         # 三原色混色（Canvas，加色/减色 + RGB/HSL）
+        ├── SoundWaveWidget.tsx     # 声波与频率（Canvas + Web Audio，真实发声 + 拍频）
+        └── TransformerWidget.tsx   # Transformer 自注意力（SVG，真实 scaled dot-product）
 ```
 
 ## 数据模型
@@ -122,10 +126,12 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 - 统一使用 **React 指针事件**（`onPointerDown/Move/Up/Cancel`）+ `setPointerCapture`，**不要**用 `window.addEventListener` 监听拖动（会造成重绑/闭包/清理问题）。
 - 画布元素设置 `touch-action: none`（Tailwind: `touch-none`）以阻止触屏滚动干扰。
-- Canvas 需要处理 HiDPI：用 `window.devicePixelRatio` 放大 backing store，再 `ctx.setTransform(dpr,...)`，CSS 尺寸保持逻辑像素。
+- **Canvas HiDPI 必须用 `src/lib/canvas.ts` 的 `prepareCanvas(canvas, W, H)`**，不要手写 `canvas.width = W * dpr` + `setTransform(dpr,...)`。原因：Canvas 的 CSS 宽度是 `100%`，实际显示宽度约 880px 远大于逻辑 `W`（如 540），手写写法会把 `W*dpr` 的 backing store 拉伸到显示宽度，导致**文字与线条全部发虚**（傅里叶 Widget 曾因此模糊）。`prepareCanvas` 按「实际显示尺寸 × dpr」设 backing store 并把逻辑 0..W/0..H 坐标系缩放铺满，任何宽度下都像素级清晰。draw 函数开头写 `const ctx = prepareCanvas(canvas, W, H); if (!ctx) return; ctx.clearRect(0,0,W,H);` 即可，其余绘制代码不变。
 - **关键**：`useAnimationFrame` 回调即便在拖拽状态也应触发重绘（不要在拖动时 `return` 掉整个循环），否则画面会冻结——物理更新可以跳过，但绘制必须继续。
 - **阅读态也可调的控件**：Widget 若有滑块/下拉等让读者实时调节的交互，应把 `props` mirror 到本地 `useState`（用 `useEffect` 同步 prop 变化），不要依赖 `props.onPropsChange`——它在阅读态为 undefined。编辑器里的 ConfigPanel 仍通过 props 驱动保存的默认值（可参考 `SortWidget` / `FourierWidget` / `BackpropWidget`）。
 - **批量更新**：rAF 循环里若每帧做多步计算（如反向传播），把多步合并后只触发一次 `setEpoch`/`force`，避免每步一次 React 更新。
+- **SVG 的 `viewBox` 必须与渲染几何的坐标系同一尺度**。MatrixWidget 曾把 `viewBox` 设成像素尺度（±260），却用世界坐标（±5）画 Grid/箭头/手柄，导致全部缩成中心一个看不见的点--既看不到也点不到。若 `toWorld` 返回 ±5 世界坐标，`viewBox` 就必须是 `${-XMAX} ${-YMAX} ${2*XMAX} ${2*YMAX}` 的世界尺度。新增 SVG Widget 时务必核对二者一致。
+- **SVG 可拖拽元素要确保命中区不被遮挡**：装饰性的填充图形（变换后的形状、原始基向量线等）应加 `pointerEvents="none"`，只让手柄（透明大圆 + 可见小圆）接收 `onPointerDown`；手柄命中圆半径取世界坐标的 ~0.5（约 4–5% 画宽）以保证好点。
 
 ### Markdown 渲染
 
@@ -160,9 +166,10 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 > 最后更新：2026-08-05
 
-- 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
-- 内置示例共七篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播。localStorage key 已升至 `v4`，迁移逻辑见 `storage.ts`。
-- **2026-08-05 视觉改版**：整体改为深色霓虹科技主题（indigo→cyan 渐变主色、辉光、网格底纹、`.lb-surface` 卡片），七个 Widget 的画布全部重绘为深色高对比配色并加发光；range 控件自定义霓虹滑块。数学公式用 KaTeX、代码块有语法高亮。新增 Widget 时请遵循上面的「画布配色约定」。
+- 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵/三原色）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
+- 内置示例共十篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力。localStorage key 已升至 `v5`，迁移逻辑见 `storage.ts`。
+- **2026-08-05 视觉改版**：整体改为深色霓虹科技主题（indigo→cyan 渐变主色、辉光、网格底纹、`.lb-surface` 卡片），全部 Widget 画布重绘为深色高对比配色并加发光；range 控件自定义霓虹滑块。数学公式用 KaTeX、代码块有语法高亮。新增 Widget 时请遵循上面的「画布配色约定」。
+- **2026-08-05 清晰度/交互修复**：① 所有 Canvas Widget 改用 `prepareCanvas` 解决文字模糊（见上「指针/交互约定」）；② 修复 MatrixWidget 的 `viewBox` 尺度不匹配导致图形缩成中心一点、无法交互的问题。
 
 ## 不做的事（避免误解范围）
 

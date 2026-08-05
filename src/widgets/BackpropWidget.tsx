@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
+import { prepareCanvas } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface BackpropProps {
@@ -163,14 +164,8 @@ export function Backprop({ props }: { props: BackpropProps }) {
   const drawPlot = () => {
     const canvas = plotRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = prepareCanvas(canvas, PLOT_W, PLOT_H)
     if (!ctx) return
-    const dpr = window.devicePixelRatio || 1
-    if (canvas.width !== PLOT_W * dpr) {
-      canvas.width = PLOT_W * dpr
-      canvas.height = PLOT_H * dpr
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, PLOT_W, PLOT_H)
 
     const xOf = (x: number) => PAD + ((x + 1) / 2) * (PLOT_W - 2 * PAD)
@@ -239,16 +234,10 @@ export function Backprop({ props }: { props: BackpropProps }) {
   const drawLossChart = () => {
     const canvas = lossRefCanvas.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
     const CW = 200
     const CH = 110
-    const dpr = window.devicePixelRatio || 1
-    if (canvas.width !== CW * dpr) {
-      canvas.width = CW * dpr
-      canvas.height = CH * dpr
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const ctx = prepareCanvas(canvas, CW, CH)
+    if (!ctx) return
     ctx.clearRect(0, 0, CW, CH)
     ctx.fillStyle = '#0a0f1e'
     ctx.fillRect(0, 0, CW, CH)

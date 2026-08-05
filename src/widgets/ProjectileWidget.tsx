@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
+import { prepareCanvas } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface ProjectileProps {
@@ -149,14 +150,8 @@ export function Projectile({ props }: { props: ProjectileProps }) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
-    const dpr = window.devicePixelRatio || 1
-    if (canvas.width !== W * dpr) {
-      canvas.width = W * dpr
-      canvas.height = H * dpr
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
 
     const { showVelocity, trail: showTrail, gravity: g, airDrag: d } = propsRef.current

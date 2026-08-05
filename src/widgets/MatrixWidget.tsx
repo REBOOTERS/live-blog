@@ -14,9 +14,15 @@ type M2 = [number, number, number, number] // [a,b,c,d]
 
 const W = 520
 const H = 380
-const VB = `${-W / 2} ${-H / 2} ${W} ${H}`
-const UNIT = W / 2 / 5 // pixels per world unit
-const RANGE = 4.5
+// World coordinates: x in [-XMAX, XMAX], y scaled to match the W/H aspect.
+// The viewBox MUST be in the same coordinate scale as the rendered geometry
+// (Grid/Arrow/Handle all draw in world coords). A pixel-scale viewBox here
+// would shrink everything to an invisible dot at the center.
+const XMAX = 5
+const YMAX = (XMAX * H) / W
+const VB = `${-XMAX} ${-YMAX} ${2 * XMAX} ${2 * YMAX}`
+const UNIT = W / 2 / XMAX // viewBox-pixels per world unit (used by toWorld)
+const RANGE = XMAX - 0.5
 
 // A right-pointing arrow shape; makes rotation / shear / reflection obvious.
 const SHAPE: [number, number][] = [
@@ -130,11 +136,11 @@ export function Matrix({ props }: { props: MatrixProps }) {
         {showGrid && <Grid />}
 
         {/* original shape (faint dashed) */}
-        <path d={origPath} fill="none" stroke="rgba(148,163,184,0.35)" strokeWidth={0.04} strokeDasharray="0.12 0.08" />
+        <path d={origPath} fill="none" stroke="rgba(148,163,184,0.35)" strokeWidth={0.04} strokeDasharray="0.12 0.08" pointerEvents="none" />
 
         {/* original unit basis (faint) */}
-        <line x1={0} y1={0} x2={1} y2={0} stroke="rgba(251,113,133,0.35)" strokeWidth={0.03} />
-        <line x1={0} y1={0} x2={0} y2={1} stroke="rgba(56,189,248,0.35)" strokeWidth={0.03} />
+        <line x1={0} y1={0} x2={1} y2={0} stroke="rgba(251,113,133,0.35)" strokeWidth={0.03} pointerEvents="none" />
+        <line x1={0} y1={0} x2={0} y2={1} stroke="rgba(56,189,248,0.35)" strokeWidth={0.03} pointerEvents="none" />
 
         {/* transformed shape */}
         <path
@@ -145,6 +151,7 @@ export function Matrix({ props }: { props: MatrixProps }) {
           strokeWidth={0.05}
           strokeLinejoin="round"
           filter="url(#mx-glow)"
+          pointerEvents="none"
         />
 
         {/* transformed basis vectors = columns of M */}
@@ -255,8 +262,9 @@ function Handle({
 }) {
   return (
     <g onPointerDown={onPointerDown} style={{ cursor: 'grab' }}>
-      <circle cx={cx} cy={cy} r={0.32} fill="transparent" />
-      <circle cx={cx} cy={cy} r={0.16} fill="white" stroke={color} strokeWidth={0.06} pointerEvents="none" />
+      <circle cx={cx} cy={cy} r={0.55} fill="transparent" stroke="none" />
+      <circle cx={cx} cy={cy} r={0.22} fill="white" stroke={color} strokeWidth={0.09} pointerEvents="none" />
+      <circle cx={cx} cy={cy} r={0.08} fill={color} pointerEvents="none" />
     </g>
   )
 }
