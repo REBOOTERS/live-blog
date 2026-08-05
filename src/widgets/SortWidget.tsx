@@ -156,7 +156,7 @@ function Sort({ props }: { props: SortProps }) {
 
   const step = steps[Math.min(idx, steps.length - 1)]
   const max = Math.max(...step.array)
-  const showLabels = count <= 20
+  const showLabels = count <= 30
   const activeAlgo = ALGOS.find((a) => a.value === algorithm)!
 
   const stepForward = () => setIdx((i) => Math.min(steps.length - 1, i + 1))
@@ -207,15 +207,21 @@ function Sort({ props }: { props: SortProps }) {
           if (isPivot) bg = '#f472b6'
           if (step.done) bg = '#34d399'
           return (
-            <div key={i} className="flex flex-1 flex-col items-center justify-end">
-              {showLabels && (
-                <span className="mb-0.5 text-[10px] leading-none tabular-nums text-slate-400">{v}</span>
-              )}
+            <div key={i} className="flex flex-1 flex-col justify-end">
               <div
-                className="w-full rounded-t transition-[height] duration-100"
+                className="relative w-full rounded-t transition-[height] duration-100"
                 style={{ height: `${(v / max) * BAR_AREA}px`, background: bg }}
                 title={`${v}`}
-              />
+              >
+                {showLabels && (
+                  <span
+                    className="pointer-events-none absolute inset-x-0 top-1 text-center text-[10px] font-semibold leading-none tabular-nums text-slate-800"
+                    style={{ textShadow: '0 1px 0 rgba(255,255,255,0.7)' }}
+                  >
+                    {v}
+                  </span>
+                )}
+              </div>
             </div>
           )
         })}
