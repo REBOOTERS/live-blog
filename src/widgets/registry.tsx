@@ -6,6 +6,9 @@ import { ProjectileWidget } from './ProjectileWidget'
 import { FourierWidget } from './FourierWidget'
 import { MatrixWidget } from './MatrixWidget'
 import { BackpropWidget } from './BackpropWidget'
+import { ColorWidget } from './ColorWidget'
+import { SoundWaveWidget } from './SoundWaveWidget'
+import { TransformerWidget } from './TransformerWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -45,6 +48,9 @@ const registry: Record<string, WidgetDefinition<any>> = {
   fourier: FourierWidget,
   matrix: MatrixWidget,
   backprop: BackpropWidget,
+  'color-mix': ColorWidget,
+  'sound-wave': SoundWaveWidget,
+  transformer: TransformerWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {

@@ -1,8 +1,8 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v4'
-const LEGACY_KEY = 'liveblog:articles:v3'
+const KEY = 'liveblog:articles:v5'
+const LEGACY_KEY = 'liveblog:articles:v4'
 
 export function loadArticles(): Article[] {
   try {
@@ -19,7 +19,7 @@ export function loadArticles(): Article[] {
 }
 
 /**
- * v3 → v4 migration. The built-in demo articles (stable ids art-*) carry text
+ * v4 → v5 migration. The built-in demo articles (stable ids art-*) carry text
  * and default props that must match the current widget code — when that code
  * changes (e.g. the projectile interaction), the stored copies go stale and the
  * article instructions no longer match the widget. This refreshes those demo
