@@ -57,8 +57,11 @@ live-blog/
         ├── registry.tsx            # Widget 注册表与 ConfigField 类型
         ├── PendulumWidget.tsx      # 单摆（Canvas，鼠标拖动）
         ├── BezierWidget.tsx        # 三次贝塞尔（SVG，拖动控制点）
-        ├── SortWidget.tsx          # 排序可视化（Canvas/DOM 柱）
-        └── ProjectileWidget.tsx    # 抛体运动（Canvas，弹弓式拖拽）
+        ├── SortWidget.tsx          # 排序可视化（DOM 柱子 + 内部数值标签）
+        ├── ProjectileWidget.tsx    # 抛体运动（Canvas，弹弓式拖拽）
+        ├── FourierWidget.tsx       # 傅里叶变换（Canvas，手绘信号 + DFT 重建 + 频谱）
+        ├── MatrixWidget.tsx        # 矩阵变换（SVG，拖动两列基向量 + 行列式）
+        └── BackpropWidget.tsx      # 反向传播（Canvas，真实 tanh MLP 训练 + 权重图）
 ```
 
 ## 数据模型
@@ -79,9 +82,9 @@ interface Article {
 }
 ```
 
-- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v3`；修改数据结构或 seed 内容时记得升版本号。v3 首次加载会非破坏性迁移旧 v2 数据：把内置 demo 文章刷新为最新 seed、保留用户自建文章）。
+- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v4`；修改数据结构或 seed 内容时记得升版本号并把上一版 key 作为 `LEGACY_KEY`。迁移会非破坏性地把内置 demo 文章刷新为最新 seed、追加新 demo、并保留用户自建文章）。
 - `Block.id` 由 `src/lib/id.ts` 的 `uid(prefix)` 生成；示例文章使用稳定 id（`art-pendulum` 等）。
-- 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回四篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体，每个知识点一篇）。
+- 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回七篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体 / 傅里叶 / 矩阵 / 反向传播，每个知识点一篇）。
 
 ## 核心架构模式
 
@@ -121,6 +124,8 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 - 画布元素设置 `touch-action: none`（Tailwind: `touch-none`）以阻止触屏滚动干扰。
 - Canvas 需要处理 HiDPI：用 `window.devicePixelRatio` 放大 backing store，再 `ctx.setTransform(dpr,...)`，CSS 尺寸保持逻辑像素。
 - **关键**：`useAnimationFrame` 回调即便在拖拽状态也应触发重绘（不要在拖动时 `return` 掉整个循环），否则画面会冻结——物理更新可以跳过，但绘制必须继续。
+- **阅读态也可调的控件**：Widget 若有滑块/下拉等让读者实时调节的交互，应把 `props` mirror 到本地 `useState`（用 `useEffect` 同步 prop 变化），不要依赖 `props.onPropsChange`——它在阅读态为 undefined。编辑器里的 ConfigPanel 仍通过 props 驱动保存的默认值（可参考 `SortWidget` / `FourierWidget` / `BackpropWidget`）。
+- **批量更新**：rAF 循环里若每帧做多步计算（如反向传播），把多步合并后只触发一次 `setEpoch`/`force`，避免每步一次 React 更新。
 
 ### Markdown 渲染
 
@@ -150,10 +155,10 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 ## 当前已知 / 进行中的工作
 
-> 最后更新：2026-08-04
+> 最后更新：2026-08-05
 
-- 单摆 / 贝塞尔 / 抛体三个 Widget 的指针交互已统一改为 React 指针事件 + `setPointerCapture`（排序 Widget 原本就用按钮交互，未受影响）。新增 Widget 请沿用同一模式，不要回退到 `window.addEventListener`。
-- 示例已从「一篇长文含四个 Widget」拆分为四篇独立文章（每篇一个知识点），并将 localStorage key 升至 `v2` 以触发旧数据迁移。
+- 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
+- 内置示例共七篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播。localStorage key 已升至 `v4`，迁移逻辑见 `storage.ts`。
 - **2026-08-04 大改版**：① 数学公式改用 KaTeX 真实渲染（新增运行时依赖 `katex`，见上「技术栈」）；② 代码块加语法高亮 + 编辑器窗口栏 + 复制；③ 排序 Widget 在阅读模式新增算法 Tab / 复杂度徽标 / 长度与速度滑块（此前只能在编辑器里切换算法）；④ 抛体 Widget 重写为「朝目标方向拖拽 + 实时预测轨迹」，落地显示射程/最高/飞行时间；⑤ 整体打磨为精致浅色「技术博客」主题（阅读时长、品牌 prompt、代码卡片等）。**localStorage key 升至 `v3`，首次加载非破坏性迁移 v2 数据（刷新内置 demo 文章、保留用户自建文章）**——因为旧的 seed 文案（如抛体「向反方向拖拽」）必须随新交互一起更新，否则说明书与组件行为对不上。
 
 ## 不做的事（避免误解范围）

@@ -3,6 +3,9 @@ import { PendulumWidget } from './PendulumWidget'
 import { BezierWidget } from './BezierWidget'
 import { SortWidget } from './SortWidget'
 import { ProjectileWidget } from './ProjectileWidget'
+import { FourierWidget } from './FourierWidget'
+import { MatrixWidget } from './MatrixWidget'
+import { BackpropWidget } from './BackpropWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -39,6 +42,9 @@ const registry: Record<string, WidgetDefinition<any>> = {
   bezier: BezierWidget,
   sort: SortWidget,
   projectile: ProjectileWidget,
+  fourier: FourierWidget,
+  matrix: MatrixWidget,
+  backprop: BackpropWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {

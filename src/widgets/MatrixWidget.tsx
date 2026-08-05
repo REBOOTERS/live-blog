@@ -1,0 +1,286 @@
+import { useRef, useState } from 'react'
+import type { WidgetDefinition } from './registry'
+
+interface MatrixProps {
+  a: number
+  b: number
+  c: number
+  d: number
+  showGrid: boolean
+  showDeterminant: boolean
+}
+
+type M2 = [number, number, number, number] // [a,b,c,d]
+
+const W = 520
+const H = 380
+const VB = `${-W / 2} ${-H / 2} ${W} ${H}`
+const UNIT = W / 2 / 5 // pixels per world unit
+const RANGE = 4.5
+
+// A right-pointing arrow shape; makes rotation / shear / reflection obvious.
+const SHAPE: [number, number][] = [
+  [0, 0],
+  [1, 0],
+  [1, 0.25],
+  [1.5, 0.5],
+  [1, 0.75],
+  [1, 1],
+  [0, 1],
+]
+
+const PRESETS: { label: string; m: M2 }[] = [
+  { label: '单位矩阵', m: [1, 0, 0, 1] },
+  { label: '旋转 90°', m: [0, -1, 1, 0] },
+  { label: '缩放', m: [2, 0, 0, 1.5] },
+  { label: '水平错切', m: [1, 1, 0, 1] },
+  { label: '反射 (y=x)', m: [0, 1, 1, 0] },
+  { label: '投影', m: [1, 0, 0, 0] },
+]
+
+const IDENTITY: M2 = [1, 0, 0, 1]
+
+export function Matrix({ props }: { props: MatrixProps }) {
+  const { showGrid, showDeterminant } = props
+  const [m, setM] = useState<M2>([props.a, props.b, props.c, props.d])
+  const dragRef = useRef<0 | 1 | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  const [a, b, c, d] = m
+  const det = a * d - b * c
+  const collapsed = Math.abs(det) < 0.02
+  const reversed = det < -0.02
+
+  const apply = (p: [number, number]): [number, number] => [
+    a * p[0] + b * p[1],
+    c * p[0] + d * p[1],
+  ]
+
+  const toWorld = (e: React.PointerEvent): [number, number] => {
+    const svg = svgRef.current!
+    const r = svg.getBoundingClientRect()
+    const x = ((e.clientX - r.left) / r.width) * W - W / 2
+    const y = ((e.clientY - r.top) / r.height) * H - H / 2
+    return [x / UNIT, -y / UNIT] // flip y so world y is up
+  }
+
+  const onTipDown = (which: 0 | 1) => (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragRef.current = which
+    svgRef.current?.setPointerCapture(e.pointerId)
+  }
+  const onMove = (e: React.PointerEvent) => {
+    const which = dragRef.current
+    if (which === null) return
+    const [wx, wy] = toWorld(e)
+    const cx = clamp(wx, -RANGE, RANGE)
+    const cy = clamp(wy, -RANGE, RANGE)
+    setM((prev) => {
+      const next = prev.slice() as M2
+      if (which === 0) {
+        next[0] = round(cx)
+        next[2] = round(cy)
+      } else {
+        next[1] = round(cx)
+        next[3] = round(cy)
+      }
+      return next
+    })
+  }
+  const onUp = (e: React.PointerEvent) => {
+    if (dragRef.current === null) return
+    dragRef.current = null
+    svgRef.current?.releasePointerCapture(e.pointerId)
+  }
+
+  const setEntry = (i: 0 | 1 | 2 | 3) => (v: number) =>
+    setM((prev) => {
+      const next = prev.slice() as M2
+      next[i] = v
+      return next
+    })
+
+  const transformed = SHAPE.map(apply)
+  const shapePath = polygonPath(transformed)
+  const origPath = polygonPath(SHAPE)
+
+  const fill = collapsed ? '#94a3b8' : reversed ? '#fb7185' : '#6366f1'
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <svg
+        ref={svgRef}
+        viewBox={VB}
+        className="block w-full touch-none"
+        style={{ aspectRatio: `${W} / ${H}` }}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+      >
+        {showGrid && <Grid />}
+
+        {/* original shape (faint) */}
+        <path d={origPath} fill="none" stroke="#cbd5e1" strokeWidth={0.04} strokeDasharray="0.12 0.08" />
+
+        {/* unit square axes of original basis */}
+        <line x1={0} y1={0} x2={1} y2={0} stroke="#fca5a5" strokeWidth={0.03} />
+        <line x1={0} y1={0} x2={0} y2={1} stroke="#93c5fd" strokeWidth={0.03} />
+
+        {/* transformed shape */}
+        <path d={shapePath} fill={fill} fillOpacity={collapsed ? 0.25 : 0.18} stroke={fill} strokeWidth={0.05} strokeLinejoin="round" />
+
+        {/* transformed basis vectors = columns of M */}
+        <Arrow x={a} y={-c} color="#ef4444" label="î→" />
+        <Arrow x={b} y={-d} color="#3b82f6" label="ĵ→" />
+
+        {/* draggable tips */}
+        <Handle cx={a} cy={-c} color="#ef4444" onPointerDown={onTipDown(0)} />
+        <Handle cx={b} cy={-d} color="#3b82f6" onPointerDown={onTipDown(1)} />
+      </svg>
+
+      <div className="mt-3 flex flex-wrap items-start gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-400">M =</span>
+          <div className="grid grid-cols-2 gap-1">
+            <NumInput value={a} onChange={setEntry(0)} />
+            <NumInput value={b} onChange={setEntry(1)} />
+            <NumInput value={c} onChange={setEntry(2)} />
+            <NumInput value={d} onChange={setEntry(3)} />
+          </div>
+        </div>
+
+        {showDeterminant && (
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
+            <div className="text-slate-500">
+              det(M) = <span className="font-mono text-slate-800">{det.toFixed(2)}</span>
+            </div>
+            <div className="mt-1 font-medium" style={{ color: collapsed ? '#94a3b8' : reversed ? '#e11d48' : '#4f46e5' }}>
+              {collapsed ? '降维：图形被压扁成一条线（奇异矩阵）' : reversed ? `镜像翻转，面积缩放 ${Math.abs(det).toFixed(2)}×` : `保持定向，面积缩放 ${Math.abs(det).toFixed(2)}×`}
+            </div>
+          </div>
+        )}
+
+        <div className="ml-auto flex flex-wrap gap-1.5">
+          {PRESETS.map((p) => (
+            <button
+              key={p.label}
+              onClick={() => setM(p.m)}
+              className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+            >
+              {p.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setM(IDENTITY)}
+            className="rounded-md bg-slate-100 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-200"
+          >
+            重置
+          </button>
+        </div>
+      </div>
+
+      <p className="mt-2 text-xs text-slate-500">
+        拖动红色 î→、蓝色 ĵ→ 两个箭头的端点——它们就是矩阵的两列。被填充的箭头图形是单位形状经过 M 变换后的结果。
+      </p>
+    </div>
+  )
+}
+
+function Grid() {
+  const lines = []
+  for (let i = -5; i <= 5; i++) {
+    lines.push(
+      <line key={`v${i}`} x1={i} y1={-5} x2={i} y2={5} stroke={i === 0 ? '#cbd5e1' : '#f1f5f9'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
+    )
+    lines.push(
+      <line key={`h${i}`} x1={-5} y1={i} x2={5} y2={i} stroke={i === 0 ? '#cbd5e1' : '#f1f5f9'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
+    )
+  }
+  return <g>{lines}</g>
+}
+
+function Arrow({ x, y, color, label }: { x: number; y: number; color: string; label: string }) {
+  const len = Math.hypot(x, y)
+  if (len < 0.02) return null
+  const head = 0.18
+  const ang = Math.atan2(y, x)
+  const tipX = x
+  const tipY = y
+  const bx = tipX - head * Math.cos(ang - 0.4)
+  const by = tipY - head * Math.sin(ang - 0.4)
+  const cx = tipX - head * Math.cos(ang + 0.4)
+  const cy = tipY - head * Math.sin(ang + 0.4)
+  return (
+    <g>
+      <line x1={0} y1={0} x2={x} y2={y} stroke={color} strokeWidth={0.05} strokeLinecap="round" />
+      <polygon points={`${tipX},${tipY} ${bx},${by} ${cx},${cy}`} fill={color} />
+      <text x={x * 0.5 + 0.15} y={y * 0.5 - 0.1} fill={color} fontSize={0.35} fontWeight={600}>
+        {label}
+      </text>
+    </g>
+  )
+}
+
+function Handle({
+  cx,
+  cy,
+  color,
+  onPointerDown,
+}: {
+  cx: number
+  cy: number
+  color: string
+  onPointerDown: (e: React.PointerEvent) => void
+}) {
+  return (
+    <g onPointerDown={onPointerDown} style={{ cursor: 'grab' }}>
+      <circle cx={cx} cy={cy} r={0.32} fill="transparent" />
+      <circle cx={cx} cy={cy} r={0.16} fill="white" stroke={color} strokeWidth={0.06} pointerEvents="none" />
+    </g>
+  )
+}
+
+function NumInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <input
+      type="number"
+      step={0.1}
+      value={Number.isFinite(value) ? value : 0}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="w-14 rounded border border-slate-200 px-1.5 py-1 text-center text-xs tabular-nums focus:border-indigo-400 focus:outline-none"
+    />
+  )
+}
+
+function polygonPath(pts: [number, number][]): string {
+  // SVG y is down; data uses world-y-up, so flip here (negate y).
+  return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(3)} ${(-p[1]).toFixed(3)}`).join(' ') + ' Z'
+}
+
+function clamp(v: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, v))
+}
+function round(v: number) {
+  return Math.round(v * 100) / 100
+}
+
+export const MatrixWidget: WidgetDefinition<MatrixProps> = {
+  type: 'matrix',
+  label: '矩阵变换',
+  description: '拖动矩阵两列（基向量的像），观察线性变换如何旋转、拉伸、翻转或压平图形。',
+  icon: '🔢',
+  defaultProps: {
+    a: 1,
+    b: 1,
+    c: 0,
+    d: 1,
+    showGrid: true,
+    showDeterminant: true,
+  },
+  configSchema: [
+    { key: 'showGrid', label: '显示网格', type: 'checkbox' },
+    { key: 'showDeterminant', label: '显示行列式', type: 'checkbox' },
+  ],
+  Component: Matrix,
+}
