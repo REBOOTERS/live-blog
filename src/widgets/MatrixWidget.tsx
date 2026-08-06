@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface MatrixProps {
@@ -48,6 +50,8 @@ const IDENTITY: M2 = [1, 0, 0, 1]
 
 export function Matrix({ props }: { props: MatrixProps }) {
   const { showGrid, showDeterminant } = props
+  useTheme() // re-render on theme change
+  const P = palette()
   const [m, setM] = useState<M2>([props.a, props.b, props.c, props.d])
   const dragRef = useRef<0 | 1 | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -119,7 +123,7 @@ export function Matrix({ props }: { props: MatrixProps }) {
         ref={svgRef}
         viewBox={VB}
         className="w-full touch-none"
-        style={{ aspectRatio: `${W} / ${H}`, background: '#0a0f1e', borderRadius: 8 }}
+        style={{ aspectRatio: `${W} / ${H}`, background: P.bg, borderRadius: 8 }}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
@@ -165,7 +169,7 @@ export function Matrix({ props }: { props: MatrixProps }) {
 
       <div className="mt-3 flex flex-wrap items-start gap-4">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-sm text-cyan-300">M =</span>
+          <span className="font-mono text-sm" style={{ color: 'var(--lb-accent)' }}>M =</span>
           <div className="grid grid-cols-2 gap-1">
             <NumInput value={a} onChange={setEntry(0)} />
             <NumInput value={b} onChange={setEntry(1)} />
@@ -175,14 +179,11 @@ export function Matrix({ props }: { props: MatrixProps }) {
         </div>
 
         {showDeterminant && (
-          <div className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-xs">
-            <div className="text-slate-500">
-              det(M) = <span className="font-mono text-slate-200">{det.toFixed(2)}</span>
+          <div className="t-panel rounded-lg px-3 py-2 text-xs">
+            <div className="t-muted">
+              det(M) = <span className="t-strong font-mono">{det.toFixed(2)}</span>
             </div>
-            <div
-              className="mt-1 font-medium"
-              style={{ color: collapsed ? '#94a3b8' : reversed ? '#fb7185' : '#22d3ee' }}
-            >
+            <div className="mt-1 font-medium" style={{ color: collapsed ? P.faint : reversed ? '#fb7185' : '#06b6d4' }}>
               {collapsed ? '降维：图形被压扁成一条线（奇异矩阵）' : reversed ? `镜像翻转，面积缩放 ${Math.abs(det).toFixed(2)}×` : `保持定向，面积缩放 ${Math.abs(det).toFixed(2)}×`}
             </div>
           </div>
@@ -193,21 +194,18 @@ export function Matrix({ props }: { props: MatrixProps }) {
             <button
               key={p.label}
               onClick={() => setM(p.m)}
-              className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-200"
+              className="t-btn rounded-md px-2.5 py-1 text-xs transition"
             >
               {p.label}
             </button>
           ))}
-          <button
-            onClick={() => setM(IDENTITY)}
-            className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300 hover:bg-white/10"
-          >
+          <button onClick={() => setM(IDENTITY)} className="t-btn rounded-md px-2.5 py-1 text-xs">
             重置
           </button>
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="t-muted mt-2 text-xs">
         拖动红色 î→、青色 ĵ→ 两个箭头端点——它们就是矩阵的两列。被填充的图形是单位形状经 M 变换后的结果。
       </p>
     </div>
@@ -215,13 +213,14 @@ export function Matrix({ props }: { props: MatrixProps }) {
 }
 
 function Grid() {
+  const P = palette()
   const lines = []
   for (let i = -5; i <= 5; i++) {
     lines.push(
-      <line key={`v${i}`} x1={i} y1={-5} x2={i} y2={5} stroke={i === 0 ? 'rgba(129,140,248,0.3)' : 'rgba(148,163,184,0.07)'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
+      <line key={`v${i}`} x1={i} y1={-5} x2={i} y2={5} stroke={i === 0 ? P.axis : P.grid} strokeWidth={i === 0 ? 0.04 : 0.02} />,
     )
     lines.push(
-      <line key={`h${i}`} x1={-5} y1={i} x2={5} y2={i} stroke={i === 0 ? 'rgba(129,140,248,0.3)' : 'rgba(148,163,184,0.07)'} strokeWidth={i === 0 ? 0.04 : 0.02} />,
+      <line key={`h${i}`} x1={-5} y1={i} x2={5} y2={i} stroke={i === 0 ? P.axis : P.grid} strokeWidth={i === 0 ? 0.04 : 0.02} />,
     )
   }
   return <g>{lines}</g>
@@ -263,7 +262,7 @@ function Handle({
   return (
     <g onPointerDown={onPointerDown} style={{ cursor: 'grab' }}>
       <circle cx={cx} cy={cy} r={0.55} fill="transparent" stroke="none" />
-      <circle cx={cx} cy={cy} r={0.22} fill="white" stroke={color} strokeWidth={0.09} pointerEvents="none" />
+      <circle cx={cx} cy={cy} r={0.22} stroke={color} strokeWidth={0.09} pointerEvents="none" style={{ fill: 'var(--lb-panel)' }} />
       <circle cx={cx} cy={cy} r={0.08} fill={color} pointerEvents="none" />
     </g>
   )
@@ -276,7 +275,7 @@ function NumInput({ value, onChange }: { value: number; onChange: (v: number) =>
       step={0.1}
       value={Number.isFinite(value) ? value : 0}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-14 rounded border border-white/10 bg-slate-900 px-1.5 py-1 text-center text-xs tabular-nums text-slate-200 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20"
+      className="t-input w-14 rounded px-1.5 py-1 text-center text-xs tabular-nums outline-none transition"
     />
   )
 }

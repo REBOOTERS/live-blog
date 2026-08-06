@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
-import { prepareCanvas } from '../lib/canvas'
+import { prepareCanvas, palette } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface SoundProps {
@@ -122,16 +122,17 @@ export function SoundWave({ props }: { props: SoundProps }) {
     if (!canvas) return
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
+    const P = palette()
 
     // bg
     const bg = ctx.createLinearGradient(0, 0, 0, H)
-    bg.addColorStop(0, '#0a0f1e')
-    bg.addColorStop(1, '#070b16')
+    bg.addColorStop(0, P.bg)
+    bg.addColorStop(1, P.bg2)
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
 
     // grid + zero line
-    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
+    ctx.strokeStyle = P.grid
     ctx.lineWidth = 1
     for (let gx = 0; gx <= W; gx += 40) {
       ctx.beginPath()
@@ -139,7 +140,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
       ctx.lineTo(gx, H)
       ctx.stroke()
     }
-    ctx.strokeStyle = 'rgba(129,140,248,0.25)'
+    ctx.strokeStyle = P.axis
     ctx.beginPath()
     ctx.moveTo(0, H / 2)
     ctx.lineTo(W, H / 2)
@@ -159,7 +160,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
 
     // ghost component waves in beats mode
     if (md === 'beats') {
-      ctx.strokeStyle = 'rgba(148,163,184,0.35)'
+      ctx.strokeStyle = P.ghost
       ctx.lineWidth = 1.2
       ctx.beginPath()
       for (let x = 0; x <= W; x++) {
@@ -195,7 +196,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
     ctx.shadowBlur = 0
 
     // labels
-    ctx.fillStyle = '#818cf8'
+    ctx.fillStyle = P.muted
     ctx.font = '11px ui-monospace, monospace'
     ctx.fillText(md === 'single' ? `${f1.toFixed(1)} Hz · ${waveName(wv)}` : `${f1.toFixed(1)} + ${f2.toFixed(1)} Hz`, PAD, 18)
     if (md === 'beats') {
@@ -221,16 +222,12 @@ export function SoundWave({ props }: { props: SoundProps }) {
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {(['single', 'beats'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`rounded-[6px] px-3 py-1 text-xs font-medium transition ${
-                mode === m
-                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`rounded-[6px] px-3 py-1 text-xs font-medium transition ${mode === m ? 't-btn-primary' : 't-muted'}`}
             >
               {m === 'single' ? '单音' : '双音叠加（拍频）'}
             </button>
@@ -238,79 +235,54 @@ export function SoundWave({ props }: { props: SoundProps }) {
         </div>
         <button
           onClick={play}
-          className={`rounded-md px-4 py-1.5 text-sm font-semibold transition ${
+          className="rounded-md px-4 py-1.5 text-sm font-semibold transition"
+          style={
             playing
-              ? 'bg-rose-500/90 text-white shadow-[0_0_16px_-4px_rgba(244,63,94,0.9)]'
-              : 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] hover:brightness-110'
-          }`}
+              ? { background: 'rgba(244,63,94,0.9)', color: '#fff' }
+              : { background: 'var(--lb-accent-grad)', color: '#0a0f1e' }
+          }
         >
           {playing ? '⏸ 停止' : '▶ 发声'}
         </button>
-        <span className="ml-auto font-mono text-[10px] text-slate-500">
+        <span className="t-faint ml-auto font-mono text-[10px]">
           {playing ? '🔊 正在通过扬声器播放' : '点击发声以真实播放（需允许音频）'}
         </span>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <label className="flex items-center gap-2 text-xs text-slate-400">
+        <label className="t-muted flex items-center gap-2 text-xs">
           <span className="w-20 shrink-0">频率 {noteName(freq1)}</span>
-          <input
-            type="range"
-            min={80}
-            max={1200}
-            step={1}
-            value={freq1}
-            onChange={(e) => setFreq1(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span className="w-16 text-right font-mono tabular-nums text-slate-300">{freq1.toFixed(0)}Hz</span>
+          <input type="range" min={80} max={1200} step={1} value={freq1} onChange={(e) => setFreq1(Number(e.target.value))} className="flex-1" />
+          <span className="t-strong w-16 text-right font-mono tabular-nums">{freq1.toFixed(0)}Hz</span>
         </label>
         {mode === 'beats' ? (
-          <label className="flex items-center gap-2 text-xs text-slate-400">
+          <label className="t-muted flex items-center gap-2 text-xs">
             <span className="w-20 shrink-0">频率② {noteName(freq2)}</span>
-            <input
-              type="range"
-              min={80}
-              max={1200}
-              step={1}
-              value={freq2}
-              onChange={(e) => setFreq2(Number(e.target.value))}
-              className="flex-1"
-            />
-            <span className="w-16 text-right font-mono tabular-nums text-slate-300">{freq2.toFixed(0)}Hz</span>
+            <input type="range" min={80} max={1200} step={1} value={freq2} onChange={(e) => setFreq2(Number(e.target.value))} className="flex-1" />
+            <span className="t-strong w-16 text-right font-mono tabular-nums">{freq2.toFixed(0)}Hz</span>
           </label>
         ) : (
-          <label className="flex items-center gap-2 text-xs text-slate-400">
+          <label className="t-muted flex items-center gap-2 text-xs">
             <span className="w-20 shrink-0">振幅（响度）</span>
-            <input
-              type="range"
-              min={0.02}
-              max={0.6}
-              step={0.01}
-              value={amp}
-              onChange={(e) => setAmp(Number(e.target.value))}
-              className="flex-1"
-            />
-            <span className="w-16 text-right font-mono tabular-nums text-slate-300">{Math.round(amp * 100)}%</span>
+            <input type="range" min={0.02} max={0.6} step={0.01} value={amp} onChange={(e) => setAmp(Number(e.target.value))} className="flex-1" />
+            <span className="t-strong w-16 text-right font-mono tabular-nums">{Math.round(amp * 100)}%</span>
           </label>
         )}
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {(['sine', 'square', 'triangle', 'sawtooth'] as const).map((wv) => (
             <button
               key={wv}
               onClick={() => setWave(wv)}
-              className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition ${
-                wave === wv ? 'bg-white/15 text-cyan-200' : 'text-slate-500 hover:text-slate-300'
-              }`}
+              className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition ${wave === wv ? 't-btn-primary' : 't-muted'}`}
             >
               {waveName(wv)}
             </button>
           ))}
         </div>
-        <p className="ml-auto text-xs text-slate-500">
+        <p className="t-faint ml-auto text-xs">
           {mode === 'beats'
             ? '两条频率相近的波相加，振幅周期性起伏即「拍频」——调音师靠它判断是否合拍。'
             : '频率↑音调升高，振幅↑响度增大，波形决定音色。'}

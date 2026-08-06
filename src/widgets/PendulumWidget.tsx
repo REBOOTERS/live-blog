@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
-import { prepareCanvas } from '../lib/canvas'
+import { prepareCanvas, palette } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface PendulumProps {
@@ -78,16 +78,17 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
     ctx.clearRect(0, 0, W, H)
+    const P = palette()
 
     // background
     const bg = ctx.createLinearGradient(0, 0, 0, H)
-    bg.addColorStop(0, '#0a0f1e')
-    bg.addColorStop(1, '#070b16')
+    bg.addColorStop(0, P.bg)
+    bg.addColorStop(1, P.bg2)
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
 
     // grid
-    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
+    ctx.strokeStyle = P.grid
     ctx.lineWidth = 1
     for (let x = 0; x < W; x += 24) {
       ctx.beginPath()
@@ -118,7 +119,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     ctx.stroke()
 
     // pivot
-    ctx.fillStyle = '#cbd5e1'
+    ctx.fillStyle = P.text
     ctx.beginPath()
     ctx.arc(PIVOT.x, PIVOT.y, 6, 0, Math.PI * 2)
     ctx.fill()
@@ -141,22 +142,22 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     ctx.shadowBlur = 0
 
     // angle readout near pivot
-    ctx.fillStyle = '#cbd5e1'
+    ctx.fillStyle = P.text
     ctx.font = '13px ui-monospace, monospace'
     const deg = ((theta * 180) / Math.PI).toFixed(1)
     ctx.fillText(`θ = ${deg}°`, PIVOT.x + 14, PIVOT.y - 8)
 
     if (showEnergy) {
-      ctx.fillStyle = '#818cf8'
+      ctx.fillStyle = P.muted
       ctx.font = '12px ui-monospace, monospace'
       ctx.fillText(`ω = ${omegaRef.current.toFixed(2)} rad/s`, 16, 26)
-      ctx.fillStyle = '#94a3b8'
+      ctx.fillStyle = P.faint
       ctx.fillText(`E ≈ ${energy.toFixed(3)}（守恒演示）`, 16, 46)
     }
 
     // hint
     if (Math.abs(omegaRef.current) < 0.02 && !draggingRef.current) {
-      ctx.fillStyle = '#64748b'
+      ctx.fillStyle = P.faint
       ctx.font = '12px ui-sans-serif, system-ui'
       ctx.fillText('拖动小球设定角度，松手开始摆动', 16, H - 16)
     }

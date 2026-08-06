@@ -18,8 +18,7 @@ export function ConfigPanel({ def, value, onChange }: Props) {
   )
 }
 
-const inputCls =
-  'w-full rounded border border-white/10 bg-slate-900 px-2 py-1.5 text-sm text-slate-200 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20'
+const inputCls = 't-input w-full rounded px-2 py-1.5 text-sm outline-none transition'
 
 function FieldEditor({
   field,
@@ -30,10 +29,9 @@ function FieldEditor({
   raw: unknown
   onSet: (v: unknown) => void
 }) {
-  const unit =
-    'unit' in field && field.unit ? <span className="text-slate-500">{field.unit}</span> : null
+  const unit = 'unit' in field && field.unit ? <span className="t-faint">{field.unit}</span> : null
   const label = (
-    <label className="mb-1 flex items-center justify-between text-xs font-medium text-slate-400">
+    <label className="t-muted mb-1 flex items-center justify-between text-xs font-medium">
       <span>{field.label}</span>
       {unit}
     </label>
@@ -41,12 +39,13 @@ function FieldEditor({
 
   if (field.type === 'checkbox') {
     return (
-      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+      <label className="t-strong flex cursor-pointer items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={Boolean(raw)}
           onChange={(e) => onSet(e.target.checked)}
-          className="h-4 w-4 rounded accent-indigo-500"
+          className="h-4 w-4 rounded"
+          style={{ accentColor: 'var(--lb-accent-2)' }}
         />
         <span>{field.label}</span>
       </label>
@@ -75,7 +74,7 @@ function FieldEditor({
             step={field.step}
             value={n}
             onChange={(e) => onSet(Number(e.target.value))}
-            className="w-20 rounded border border-white/10 bg-slate-900 px-2 py-1 text-right text-xs tabular-nums text-slate-200 outline-none focus:border-indigo-400/60"
+            className="t-input w-20 rounded px-2 py-1 text-right text-xs tabular-nums"
           />
         </div>
       </div>
@@ -86,11 +85,7 @@ function FieldEditor({
     return (
       <div>
         {label}
-        <select
-          value={String(raw ?? '')}
-          onChange={(e) => onSet(e.target.value)}
-          className={inputCls}
-        >
+        <select value={String(raw ?? '')} onChange={(e) => onSet(e.target.value)} className={inputCls}>
           {field.options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -109,7 +104,7 @@ function FieldEditor({
           type="color"
           value={String(raw ?? '#000000')}
           onChange={(e) => onSet(e.target.value)}
-          className="h-9 w-full cursor-pointer rounded border border-white/10 bg-slate-900"
+          className="t-input h-9 w-full cursor-pointer rounded"
         />
       </div>
     )
@@ -119,12 +114,7 @@ function FieldEditor({
     return (
       <div>
         {label}
-        <textarea
-          value={String(raw ?? '')}
-          onChange={(e) => onSet(e.target.value)}
-          rows={3}
-          className={inputCls}
-        />
+        <textarea value={String(raw ?? '')} onChange={(e) => onSet(e.target.value)} rows={3} className={inputCls} />
       </div>
     )
   }
@@ -132,12 +122,7 @@ function FieldEditor({
   return (
     <div>
       {label}
-      <input
-        type="text"
-        value={String(raw ?? '')}
-        onChange={(e) => onSet(e.target.value)}
-        className={inputCls}
-      />
+      <input type="text" value={String(raw ?? '')} onChange={(e) => onSet(e.target.value)} className={inputCls} />
     </div>
   )
 }

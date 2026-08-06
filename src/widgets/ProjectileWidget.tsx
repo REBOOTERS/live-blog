@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
-import { prepareCanvas } from '../lib/canvas'
+import { prepareCanvas, palette } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface ProjectileProps {
@@ -153,20 +153,21 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
     ctx.clearRect(0, 0, W, H)
+    const P = palette()
 
     const { showVelocity, trail: showTrail, gravity: g, airDrag: d } = propsRef.current
 
     // background
     const bg = ctx.createLinearGradient(0, 0, 0, H)
-    bg.addColorStop(0, '#0a0f1e')
-    bg.addColorStop(1, '#070b16')
+    bg.addColorStop(0, P.bg)
+    bg.addColorStop(1, P.bg2)
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
 
     // ground
-    ctx.fillStyle = 'rgba(34,211,238,0.06)'
+    ctx.fillStyle = 'rgba(34,211,238,0.07)'
     ctx.fillRect(0, ORIGIN.y, W, H - ORIGIN.y)
-    ctx.strokeStyle = 'rgba(129,140,248,0.5)'
+    ctx.strokeStyle = P.axis
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, ORIGIN.y)
@@ -174,7 +175,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     ctx.stroke()
 
     // grid
-    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
+    ctx.strokeStyle = P.grid
     for (let mx = 0; mx * SCALE < W; mx += 5) {
       ctx.beginPath()
       ctx.moveTo(ORIGIN.x + mx * SCALE, 0)
@@ -223,7 +224,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
         const last = pts[pts.length - 1]
         const lx = ORIGIN.x + last.x * SCALE
         const ly = ORIGIN.y
-        ctx.fillStyle = '#94a3b8'
+        ctx.fillStyle = P.muted
         ctx.beginPath()
         ctx.arc(lx, ly, 4, 0, Math.PI * 2)
         ctx.fill()
@@ -239,7 +240,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
         '#22d3ee',
       )
       const angle = (Math.atan2(aim.vy, aim.vx) * 180) / Math.PI
-      ctx.fillStyle = '#a5b4fc'
+      ctx.fillStyle = P.muted
       ctx.font = '12px ui-monospace, monospace'
       ctx.fillText(`v₀ = ${aim.speed.toFixed(1)} m/s`, 12, 22)
       ctx.fillText(`α = ${angle.toFixed(0)}°`, 12, 40)
@@ -267,18 +268,18 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     }
 
     // origin marker
-    ctx.fillStyle = '#cbd5e1'
+    ctx.fillStyle = P.text
     ctx.beginPath()
     ctx.arc(ORIGIN.x, ORIGIN.y, 4, 0, Math.PI * 2)
     ctx.fill()
 
     if (!s.flying && !aim && !s.landed) {
-      ctx.fillStyle = '#64748b'
+      ctx.fillStyle = P.faint
       ctx.font = '12px ui-sans-serif, system-ui'
       ctx.fillText('从发射点朝目标方向拖拽，松手发射', 12, H - 14)
     }
     if (s.flying) {
-      ctx.fillStyle = '#94a3b8'
+      ctx.fillStyle = P.muted
       ctx.font = '12px ui-monospace, monospace'
       ctx.fillText(`x = ${s.x.toFixed(1)} m   y = ${s.y.toFixed(1)} m`, W - 168, 22)
       ctx.fillText(`vx = ${s.vx.toFixed(1)}   vy = ${s.vy.toFixed(1)}`, W - 168, 40)
@@ -308,7 +309,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
       <div className="mt-2 flex justify-end">
         <button
           onClick={reset}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+          className="t-btn rounded-md px-3 py-1.5 text-sm"
         >
           ↺ 重置
         </button>

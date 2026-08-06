@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
-import { prepareCanvas } from '../lib/canvas'
+import { prepareCanvas, palette } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface FourierProps {
@@ -198,6 +198,7 @@ export function Fourier({ props }: { props: FourierProps }) {
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
     ctx.clearRect(0, 0, W, H)
+    const P = palette()
 
     const sig = signalRef.current
     const mid = (SIG_TOP + SIG_BOT) / 2
@@ -206,21 +207,21 @@ export function Fourier({ props }: { props: FourierProps }) {
     const yOf = (v: number) => mid - v * half
 
     // canvas background
-    ctx.fillStyle = '#070b16'
+    ctx.fillStyle = P.bg2
     ctx.fillRect(0, 0, W, H)
 
     // signal panel background
-    ctx.fillStyle = '#0a0f1e'
+    ctx.fillStyle = P.bg
     ctx.fillRect(PAD_L, SIG_TOP - 4, PLOT_W, SIG_BOT - SIG_TOP + 8)
     // zero line
-    ctx.strokeStyle = 'rgba(129,140,248,0.25)'
+    ctx.strokeStyle = P.axis
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(PAD_L, mid)
     ctx.lineTo(W - PAD_R, mid)
     ctx.stroke()
     // gridlines at ±1
-    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
+    ctx.strokeStyle = P.grid
     for (const gv of [-1, 1]) {
       ctx.beginPath()
       ctx.moveTo(PAD_L, yOf(gv))
@@ -229,7 +230,7 @@ export function Fourier({ props }: { props: FourierProps }) {
     }
 
     // original signal (faint dashed)
-    ctx.strokeStyle = 'rgba(148,163,184,0.6)'
+    ctx.strokeStyle = P.ghost
     ctx.lineWidth = 1.5
     ctx.setLineDash([3, 3])
     drawPath(ctx, sig, xOf, yOf)
@@ -270,21 +271,21 @@ export function Fourier({ props }: { props: FourierProps }) {
     ctx.shadowBlur = 0
 
     // axis labels
-    ctx.fillStyle = '#64748b'
+    ctx.fillStyle = P.faint
     ctx.font = '10px ui-monospace, monospace'
     ctx.fillText('+1', 6, yOf(1) + 3)
     ctx.fillText(' 0', 10, mid + 3)
     ctx.fillText('-1', 8, yOf(-1) + 3)
-    ctx.fillStyle = '#818cf8'
+    ctx.fillStyle = P.muted
     ctx.fillText('时域 n →', PAD_L, SIG_BOT + 12)
 
     if (!showSpectrum) return
 
     // spectrum panel
     const specH = SPEC_BOT - SPEC_TOP
-    ctx.fillStyle = '#0a0f1e'
+    ctx.fillStyle = P.bg
     ctx.fillRect(PAD_L, SPEC_TOP - 4, PLOT_W, specH + 8)
-    ctx.fillStyle = '#818cf8'
+    ctx.fillStyle = P.muted
     ctx.font = '10px ui-monospace, monospace'
     ctx.fillText('频域 |X[k]| →', PAD_L, SPEC_TOP - 8)
 
@@ -295,7 +296,7 @@ export function Fourier({ props }: { props: FourierProps }) {
       const h = (dft.amp[k] / maxAmp) * (specH - 6)
       const x = PAD_L + k * (barW + gap)
       const used = k <= harmonics
-      ctx.fillStyle = used ? '#6366f1' : 'rgba(148,163,184,0.25)'
+      ctx.fillStyle = used ? '#6366f1' : P.grid
       if (used) {
         ctx.shadowColor = 'rgba(99,102,241,0.5)'
         ctx.shadowBlur = 6
@@ -318,58 +319,35 @@ export function Fourier({ props }: { props: FourierProps }) {
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {PRESETS.map((p) => (
             <button
               key={p.id}
               onClick={() => choosePreset(p.id)}
-              className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition-colors ${
-                preset === p.id
-                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition-colors ${preset === p.id ? 't-btn-primary' : 't-muted'}`}
             >
               {p.label}
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setPlaying((v) => !v)}
-          className="ml-auto rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] hover:brightness-110"
-        >
+        <button onClick={() => setPlaying((v) => !v)} className="t-btn-primary ml-auto rounded-md px-3 py-1.5 text-xs">
           {playing ? '⏸ 暂停' : '▶ 播放'}
         </button>
       </div>
 
       <div className="mt-3 space-y-2">
-        <label className="flex items-center gap-3 text-xs text-slate-400">
+        <label className="t-muted flex items-center gap-3 text-xs">
           <span className="w-28 shrink-0">重建频率数 K</span>
-          <input
-            type="range"
-            min={0}
-            max={N / 2}
-            step={1}
-            value={harmonics}
-            onChange={(e) => setHarmonics(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span className="w-10 text-right font-mono tabular-nums text-slate-300">{harmonics}</span>
+          <input type="range" min={0} max={N / 2} step={1} value={harmonics} onChange={(e) => setHarmonics(Number(e.target.value))} className="flex-1" />
+          <span className="t-strong w-10 text-right font-mono tabular-nums">{harmonics}</span>
         </label>
-        <label className="flex items-center gap-3 text-xs text-slate-400">
+        <label className="t-muted flex items-center gap-3 text-xs">
           <span className="w-28 shrink-0">扫描速度</span>
-          <input
-            type="range"
-            min={0.1}
-            max={2}
-            step={0.05}
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span className="w-10 text-right font-mono tabular-nums text-slate-300">{speed.toFixed(2)}×</span>
+          <input type="range" min={0.1} max={2} step={0.05} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="flex-1" />
+          <span className="t-strong w-10 text-right font-mono tabular-nums">{speed.toFixed(2)}×</span>
         </label>
       </div>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="t-muted mt-2 text-xs">
         灰色虚线为原始信号，青色实线为前 {harmonics} 个频率分量的重建；在上方时域图中拖动鼠标可手绘信号，频谱中深色柱为已采用的分量。
       </p>
     </div>

@@ -126,21 +126,18 @@ export function ColorMix({ props }: { props: ColorProps }) {
         {/* resulting color preview */}
         <div className="flex flex-col gap-2">
           <div
-            className="flex-1 rounded-lg border border-white/10"
-            style={{ background: hex, minHeight: 80, boxShadow: `0 0 28px -6px ${hex}` }}
+            className="flex-1 rounded-lg border"
+            style={{ background: hex, minHeight: 80, boxShadow: `0 0 28px -6px ${hex}`, borderColor: 'var(--lb-border-soft)' }}
           />
-          <div className="rounded-lg border border-white/10 bg-slate-950/60 p-2 font-mono text-[11px] leading-relaxed text-slate-300">
-            <div>HEX <span className="text-cyan-300">{hex}</span></div>
+          <div className="t-panel t-text rounded-lg p-2 font-mono text-[11px] leading-relaxed">
+            <div>HEX <span style={{ color: 'var(--lb-accent)' }}>{hex}</span></div>
             <div>RGB {r},{g},{b}</div>
             <div>HSL {hsl.h}°,{hsl.s}%,{hsl.l}%</div>
-            <div className="mt-1 text-slate-500">亮度 {lum}</div>
+            <div className="t-faint mt-1">亮度 {lum}</div>
             <div className="flex items-center gap-1.5 pt-1">
-              <span className="text-slate-500">互补</span>
-              <span
-                className="inline-block h-3.5 w-3.5 rounded-sm border border-white/20"
-                style={{ background: comp }}
-              />
-              <span className="text-slate-400">{comp}</span>
+              <span className="t-faint">互补</span>
+              <span className="inline-block h-3.5 w-3.5 rounded-sm" style={{ background: comp, border: '1px solid var(--lb-border-soft)' }} />
+              <span className="t-muted">{comp}</span>
             </div>
           </div>
         </div>
@@ -154,15 +151,13 @@ export function ColorMix({ props }: { props: ColorProps }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {(['additive', 'subtractive'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
               className={`rounded-[6px] px-3 py-1 text-xs font-medium transition ${
-                mode === m
-                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950'
-                  : 'text-slate-400 hover:text-slate-200'
+                mode === m ? 't-btn-primary' : 't-muted'
               }`}
             >
               {m === 'additive' ? '加色（光）' : '减色（颜料）'}
@@ -175,11 +170,11 @@ export function ColorMix({ props }: { props: ColorProps }) {
             tRef.current = 0
             force((n) => n + 1)
           }}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10"
+          className="t-btn rounded-md px-3 py-1.5 text-xs"
         >
           复位白光
         </button>
-        <span className="ml-auto font-mono text-[10px] text-slate-500">
+        <span className="t-faint ml-auto font-mono text-[10px]">
           {mode === 'additive' ? '三束光叠加 → 越加越亮，全开为白' : '三种颜料叠加 → 越混越暗，全混为黑'}
         </span>
       </div>
@@ -209,7 +204,7 @@ function ChannelSlider({
   track: string
 }) {
   return (
-    <label className="flex items-center gap-3 text-xs text-slate-400">
+    <label className="t-muted flex items-center gap-3 text-xs">
       <span className="w-24 shrink-0 font-mono">{label}</span>
       <input
         type="range"
@@ -221,7 +216,7 @@ function ChannelSlider({
         className="flex-1"
         style={{ accentColor: track }}
       />
-      <span className="w-9 text-right font-mono tabular-nums text-slate-300">{value}</span>
+      <span className="t-strong w-9 text-right font-mono tabular-nums">{value}</span>
     </label>
   )
 }

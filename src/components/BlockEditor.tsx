@@ -15,9 +15,12 @@ interface Props {
 
 export function BlockEditor({ block, index, total, onChange, onDelete, onMove }: Props) {
   return (
-    <div className="group rounded-xl border border-white/10 bg-slate-900/50 p-3 shadow-lg shadow-black/20">
+    <div className="group rounded-xl border p-3 shadow-lg" style={{ borderColor: 'var(--lb-border-soft)', background: 'var(--lb-surface-bg)' }}>
       <div className="mb-2 flex items-center gap-1">
-        <span className="rounded border border-indigo-400/30 bg-indigo-500/10 px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-indigo-300">
+        <span
+          className="rounded px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider"
+          style={{ border: '1px solid var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
+        >
           {block.kind === 'text' ? '文字' : '交互组件'}
         </span>
         <div className="ml-auto flex items-center gap-1 opacity-60 transition group-hover:opacity-100">
@@ -67,9 +70,7 @@ function IconBtn({
       disabled={disabled}
       onClick={onClick}
       className={`flex h-7 w-7 items-center justify-center rounded text-sm ${
-        danger
-          ? 'text-rose-400 hover:bg-rose-500/10'
-          : 'text-slate-400 hover:bg-white/10 hover:text-slate-200'
+        danger ? 'text-rose-400 hover:bg-rose-500/10' : 't-muted hover:bg-[var(--lb-hover)] hover:t-strong'
       } disabled:cursor-not-allowed disabled:opacity-30`}
     >
       {children}
@@ -85,18 +86,18 @@ function TextEditor({ value, onChange }: { value: string; onChange: (v: string) 
         <button
           type="button"
           onClick={() => setTab('edit')}
-          className={`rounded px-2.5 py-1 font-medium transition ${tab === 'edit' ? 'bg-indigo-500 text-white shadow-[0_0_12px_-4px_rgba(99,102,241,0.9)]' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}
+          className={`rounded px-2.5 py-1 font-medium transition ${tab === 'edit' ? 't-btn-primary' : 't-btn t-muted'}`}
         >
           编辑
         </button>
         <button
           type="button"
           onClick={() => setTab('preview')}
-          className={`rounded px-2.5 py-1 font-medium transition ${tab === 'preview' ? 'bg-indigo-500 text-white shadow-[0_0_12px_-4px_rgba(99,102,241,0.9)]' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}
+          className={`rounded px-2.5 py-1 font-medium transition ${tab === 'preview' ? 't-btn-primary' : 't-btn t-muted'}`}
         >
           预览
         </button>
-        <span className="ml-auto self-center font-mono text-slate-500">支持 Markdown · KaTeX 公式</span>
+        <span className="t-faint ml-auto self-center font-mono">支持 Markdown · KaTeX 公式</span>
       </div>
       {tab === 'edit' ? (
         <textarea
@@ -104,11 +105,11 @@ function TextEditor({ value, onChange }: { value: string; onChange: (v: string) 
           onChange={(e) => onChange(e.target.value)}
           rows={Math.max(4, value.split('\n').length + 1)}
           placeholder="在这里写下你的文字……（支持 Markdown）"
-          className="w-full resize-y rounded-lg border border-white/10 bg-slate-950/60 p-3 font-mono text-sm leading-relaxed text-slate-200 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-slate-600"
+          className="t-input w-full resize-y rounded-lg p-3 font-mono text-sm leading-relaxed outline-none transition placeholder:text-[var(--lb-faint)]"
         />
       ) : (
         <div
-          className="prose-lb min-h-[80px] rounded-lg border border-white/10 bg-slate-950/40 p-4"
+          className="prose-lb t-panel min-h-[80px] rounded-lg p-4"
           dangerouslySetInnerHTML={{ __html: renderMarkdown(value || '_（空）_') }}
         />
       )}
@@ -139,15 +140,15 @@ function WidgetEditor({
           </div>
         )}
       </div>
-      <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
-        <label className="mb-1 block font-mono text-[10px] font-medium uppercase tracking-wider text-indigo-300/80">组件类型</label>
+      <div className="t-panel rounded-lg p-3">
+        <label className="t-faint mb-1 block font-mono text-[10px] font-medium uppercase tracking-wider">组件类型</label>
         <select
           value={type}
           onChange={(e) => {
             const next = getWidget(e.target.value)!
             onChange(next.type, next.defaultProps)
           }}
-          className="mb-3 w-full rounded border border-white/10 bg-slate-900 px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-indigo-400/60"
+          className="t-input mb-3 w-full rounded px-2 py-1.5 text-sm outline-none"
         >
           {all.map((w) => (
             <option key={w.type} value={w.type}>
@@ -157,7 +158,7 @@ function WidgetEditor({
         </select>
         {def && (
           <>
-            <div className="mb-2 font-mono text-[10px] font-medium uppercase tracking-wider text-indigo-300/80">参数</div>
+            <div className="t-faint mb-2 font-mono text-[10px] font-medium uppercase tracking-wider">参数</div>
             <ConfigPanel def={def} value={props} onChange={(next) => onChange(type, next)} />
           </>
         )}

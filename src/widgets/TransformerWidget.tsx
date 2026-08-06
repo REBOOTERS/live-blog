@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface TransformerProps {
@@ -87,6 +89,7 @@ const SENTENCES: { id: number; text: string; tokens: string[]; note: string }[] 
 ]
 
 export function SelfAttention({ props }: { props: TransformerProps }) {
+  useTheme() // re-render on theme change so child SVGs re-read palette()
   const [sentenceId, setSentenceId] = useState(props.sentenceId)
   const [usePos, setUsePos] = useState(props.usePosition)
   const [head, setHead] = useState(0)
@@ -121,7 +124,7 @@ export function SelfAttention({ props }: { props: TransformerProps }) {
     <div className="lb-surface">
       {/* sentence selector */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {SENTENCES.map((s) => (
             <button
               key={s.id}
@@ -130,16 +133,14 @@ export function SelfAttention({ props }: { props: TransformerProps }) {
                 setQuery(0)
               }}
               className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition ${
-                sentenceId === s.id
-                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950'
-                  : 'text-slate-400 hover:text-slate-200'
+                sentenceId === s.id ? 't-btn-primary' : 't-muted'
               }`}
             >
               例{s.id + 1}
             </button>
           ))}
         </div>
-        <span className="ml-auto font-mono text-[10px] text-slate-500">{sentence.note}</span>
+        <span className="t-faint ml-auto font-mono text-[10px]">{sentence.note}</span>
       </div>
 
       {/* token row with attention arcs (SVG) */}
@@ -153,41 +154,42 @@ export function SelfAttention({ props }: { props: TransformerProps }) {
 
       {/* head selector */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-indigo-300/80">注意力头</span>
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <span className="t-faint font-mono text-[10px] uppercase tracking-wider">注意力头</span>
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {HEADS.map((h) => (
             <button
               key={h.id}
               onClick={() => setHead(h.id)}
               className={`rounded-[6px] px-2.5 py-1 text-xs font-medium transition ${
-                head === h.id ? 'bg-white/15 text-cyan-200' : 'text-slate-500 hover:text-slate-300'
+                head === h.id ? 't-btn-primary' : 't-muted'
               }`}
             >
               {h.name}
             </button>
           ))}
         </div>
-        <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs text-slate-400">
+        <label className="t-muted ml-auto flex cursor-pointer items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={usePos}
             onChange={(e) => setUsePos(e.target.checked)}
-            className="h-3.5 w-3.5 rounded accent-indigo-500"
+            className="h-3.5 w-3.5 rounded"
+            style={{ accentColor: 'var(--lb-accent-2)' }}
           />
           位置编码
         </label>
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">{activeHead.desc}</p>
+      <p className="t-faint mt-1.5 text-xs">{activeHead.desc}</p>
 
       {/* full attention matrix heatmap */}
       <div className="mt-3">
-        <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-indigo-300/80">
+        <div className="t-faint mb-1 font-mono text-[10px] uppercase tracking-wider">
           注意力矩阵（行=查询，列=被关注，{head === 2 ? '深=高' : '亮=高'}）
         </div>
         <AttentionMatrix matrix={matrix} query={clampQuery} tokens={tokens} />
       </div>
 
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="t-muted mt-2 text-xs">
         点击上方任一词作为查询（高亮），弧线粗细 = softmax(Q·K/√d) 注意力权重。
         切换不同「头」看模型如何同时学习多种依赖关系——这正是 Transformer 的核心。
       </p>
@@ -211,12 +213,13 @@ function AttentionArcs({
   const W = 540
   const baseY = 96
   const pad = 28
+  const P = palette()
   const slot = (W - pad * 2) / (tokens.length - 1 || 1)
   const xOf = (i: number) => pad + i * slot
   const maxW = Math.max(...weights, 0.0001)
 
   return (
-    <svg viewBox={`0 0 ${W} 120`} className="w-full" style={{ background: '#0a0f1e', borderRadius: 8 }}>
+    <svg viewBox={`0 0 ${W} 120`} className="w-full" style={{ background: P.bg, borderRadius: 8 }}>
       {/* arcs from query to every token */}
       {weights.map((w, j) => {
         if (j === query) return null
@@ -248,9 +251,10 @@ function AttentionArcs({
               width={44}
               height={26}
               rx={6}
-              fill={isQ ? headColor : '#111a2e'}
-              stroke={isQ ? headColor : 'rgba(129,140,248,0.4)'}
+              fill={isQ ? headColor : undefined}
+              stroke={isQ ? headColor : undefined}
               strokeWidth={isQ ? 0 : 1}
+              style={isQ ? undefined : { fill: 'var(--lb-panel)', stroke: 'var(--lb-border)' }}
             />
             <text
               x={xOf(i)}
@@ -258,7 +262,7 @@ function AttentionArcs({
               textAnchor="middle"
               fontSize={13}
               fontWeight={isQ ? 700 : 500}
-              fill={isQ ? '#0a0f1e' : '#cbd5e1'}
+              fill={isQ ? P.bg2 : P.text}
             >
               {tk}
             </text>
@@ -268,7 +272,7 @@ function AttentionArcs({
               textAnchor="middle"
               fontSize={9}
               fontFamily="ui-monospace, monospace"
-              fill={isQ ? headColor : '#475569'}
+              fill={isQ ? headColor : P.faint}
             >
               {(weights[i] * 100).toFixed(0)}%
             </text>

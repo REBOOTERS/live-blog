@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { palette } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface BezierProps {
@@ -31,6 +32,7 @@ function clamp(v: number, lo: number, hi: number) {
 
 export function Bezier({ props }: { props: BezierProps }) {
   const { animate, showConstruction, color } = props
+  const P = palette()
   const [t, setT] = useState(0.4)
   const tRef = useRef(0.4)
   const dragRef = useRef<HandleId | null>(null)
@@ -132,7 +134,7 @@ export function Bezier({ props }: { props: BezierProps }) {
       >
         <defs>
           <pattern id="bz-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(148,163,184,0.08)" strokeWidth="1" />
+            <path d="M 24 0 L 0 0 0 24" fill="none" stroke={P.grid} strokeWidth="1" />
           </pattern>
           <filter id="bz-glow" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="3" result="b" />
@@ -142,7 +144,7 @@ export function Bezier({ props }: { props: BezierProps }) {
             </feMerge>
           </filter>
         </defs>
-        <rect width={W} height={H} fill="#0a0f1e" rx="8" />
+        <rect width={W} height={H} fill={P.bg} rx="8" />
         <rect width={W} height={H} fill="url(#bz-grid)" />
 
         {/* control polygon */}
@@ -175,7 +177,7 @@ export function Bezier({ props }: { props: BezierProps }) {
       </svg>
 
       <div className="mt-3 flex items-center gap-3">
-        <span className="w-8 font-mono text-xs text-cyan-300">t</span>
+        <span className="w-8 font-mono text-xs" style={{ color: 'var(--lb-accent)' }}>t</span>
         <input
           type="range"
           min={0}
@@ -190,9 +192,9 @@ export function Bezier({ props }: { props: BezierProps }) {
           className="flex-1"
           disabled={animate}
         />
-        <span className="w-12 text-right font-mono text-xs tabular-nums text-slate-300">{t.toFixed(2)}</span>
+        <span className="t-strong w-12 text-right font-mono text-xs tabular-nums">{t.toFixed(2)}</span>
       </div>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="t-muted mt-2 text-xs">
         拖动四个控制点调整曲线；红点为当前 t 值在曲线上的位置，黄点展示 De Casteljau 递推过程。
       </p>
     </div>
@@ -212,7 +214,7 @@ function Handle({
     <g onPointerDown={onPointerDown} style={{ cursor: 'grab' }}>
       {/* larger transparent hit area — fill="transparent" still captures events */}
       <circle cx={pt.x} cy={pt.y} r={14} fill="transparent" stroke="none" />
-      <circle cx={pt.x} cy={pt.y} r={6} fill="white" stroke={color} strokeWidth={2.5} pointerEvents="none" />
+      <circle cx={pt.x} cy={pt.y} r={6} stroke={color} strokeWidth={2.5} pointerEvents="none" style={{ fill: 'var(--lb-panel)' }} />
     </g>
   )
 }

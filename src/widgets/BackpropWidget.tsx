@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
-import { prepareCanvas } from '../lib/canvas'
+import { prepareCanvas, palette } from '../lib/canvas'
 import type { WidgetDefinition } from './registry'
 
 interface BackpropProps {
@@ -167,15 +167,16 @@ export function Backprop({ props }: { props: BackpropProps }) {
     const ctx = prepareCanvas(canvas, PLOT_W, PLOT_H)
     if (!ctx) return
     ctx.clearRect(0, 0, PLOT_W, PLOT_H)
+    const P = palette()
 
     const xOf = (x: number) => PAD + ((x + 1) / 2) * (PLOT_W - 2 * PAD)
     const yOf = (y: number) => PLOT_H / 2 - (y / 1.3) * (PLOT_H / 2 - 16)
 
     // bg
-    ctx.fillStyle = '#0a0f1e'
+    ctx.fillStyle = P.bg
     ctx.fillRect(PAD, 12, PLOT_W - 2 * PAD, PLOT_H - 24)
     // grid
-    ctx.strokeStyle = 'rgba(148,163,184,0.08)'
+    ctx.strokeStyle = P.grid
     ctx.lineWidth = 1
     for (let gx = -1; gx <= 1; gx += 0.5) {
       ctx.beginPath()
@@ -190,7 +191,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
       ctx.stroke()
     }
     // axes
-    ctx.strokeStyle = 'rgba(129,140,248,0.3)'
+    ctx.strokeStyle = P.axis
     ctx.beginPath()
     ctx.moveTo(PAD, yOf(0))
     ctx.lineTo(PLOT_W - PAD, yOf(0))
@@ -199,7 +200,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
     ctx.stroke()
 
     // target
-    ctx.strokeStyle = 'rgba(148,163,184,0.7)'
+    ctx.strokeStyle = P.ghost
     ctx.lineWidth = 2
     ctx.setLineDash([4, 4])
     ctx.beginPath()
@@ -238,10 +239,11 @@ export function Backprop({ props }: { props: BackpropProps }) {
     const CH = 110
     const ctx = prepareCanvas(canvas, CW, CH)
     if (!ctx) return
+    const P = palette()
     ctx.clearRect(0, 0, CW, CH)
-    ctx.fillStyle = '#0a0f1e'
+    ctx.fillStyle = P.bg
     ctx.fillRect(0, 0, CW, CH)
-    ctx.strokeStyle = 'rgba(148,163,184,0.1)'
+    ctx.strokeStyle = P.grid
     ctx.lineWidth = 1
     for (let gy = 0.25; gy < 1; gy += 0.25) {
       ctx.beginPath()
@@ -251,7 +253,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
     }
     const hist = historyRef.current
     if (hist.length < 2) {
-      ctx.fillStyle = '#64748b'
+      ctx.fillStyle = P.faint
       ctx.font = '11px ui-monospace, monospace'
       ctx.fillText('loss →', 8, 18)
       return
@@ -285,7 +287,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
       else ctx.lineTo(x, y)
     })
     ctx.stroke()
-    ctx.fillStyle = '#818cf8'
+    ctx.fillStyle = P.muted
     ctx.font = '10px ui-monospace, monospace'
     ctx.fillText('loss', 6, 12)
   }
@@ -313,7 +315,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
         <select
           value={target}
           onChange={(e) => setTarget(e.target.value as TargetId)}
-          className="rounded-md border border-white/10 bg-slate-900 px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-cyan-400/60"
+          className="t-input rounded-md px-2 py-1.5 text-sm outline-none"
         >
           {TARGETS.map((t) => (
             <option key={t.id} value={t.id}>
@@ -321,10 +323,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
             </option>
           ))}
         </select>
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          className="rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-3 py-1.5 text-sm font-semibold text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] transition hover:brightness-110"
-        >
+        <button onClick={() => setPlaying((p) => !p)} className="t-btn-primary rounded-md px-3 py-1.5 text-sm">
           {playing ? '⏸ 暂停' : '▶ 训练'}
         </button>
         <button
@@ -332,19 +331,18 @@ export function Backprop({ props }: { props: BackpropProps }) {
             stepOnce()
             setEpoch((e) => e + 1)
           }}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+          className="t-btn rounded-md px-3 py-1.5 text-sm"
         >
           单步
         </button>
-        <button
-          onClick={reset}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
-        >
+        <button onClick={reset} className="t-btn rounded-md px-3 py-1.5 text-sm">
           ↺ 重置
         </button>
-        <div className="ml-auto flex items-center gap-3 font-mono text-xs text-slate-500">
-          <span className="tabular-nums text-slate-400">epoch {epoch}</span>
-          <span className="tabular-nums text-cyan-300">loss {lossDisplay.toFixed(4)}</span>
+        <div className="t-faint ml-auto flex items-center gap-3 font-mono text-xs">
+          <span className="t-muted tabular-nums">epoch {epoch}</span>
+          <span className="tabular-nums" style={{ color: 'var(--lb-accent)' }}>
+            loss {lossDisplay.toFixed(4)}
+          </span>
         </div>
       </div>
 
@@ -357,7 +355,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
             ref={lossRefCanvas}
             style={{ width: '100%', aspectRatio: '200 / 110', borderRadius: 8 }}
           />
-          <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-400">
+          <div className="t-muted mt-2 grid grid-cols-1 gap-2 text-xs">
             <label className="flex items-center gap-2">
               <span className="w-12 shrink-0">隐藏层</span>
               <input
@@ -369,7 +367,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
                 onChange={(e) => setHidden(Number(e.target.value))}
                 className="flex-1"
               />
-              <span className="w-4 text-right font-mono tabular-nums text-slate-300">{hidden}</span>
+              <span className="t-strong w-4 text-right font-mono tabular-nums">{hidden}</span>
             </label>
             <label className="flex items-center gap-2">
               <span className="w-12 shrink-0">学习率</span>
@@ -382,13 +380,13 @@ export function Backprop({ props }: { props: BackpropProps }) {
                 onChange={(e) => setLearningRate(Number(e.target.value))}
                 className="flex-1"
               />
-              <span className="w-10 text-right font-mono tabular-nums text-slate-300">{learningRate.toFixed(3)}</span>
+              <span className="t-strong w-10 text-right font-mono tabular-nums">{learningRate.toFixed(3)}</span>
             </label>
           </div>
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="t-muted mt-2 text-xs">
         灰色虚线是目标函数，青色实线是这个 1→{hidden}→1 小网络的当前输出。连线颜色表示权重正负（青正红负），粗细表示权重大小——训练时观察误差如何沿网络反向传播并更新这些连线。
       </p>
     </div>
@@ -425,7 +423,7 @@ function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
     <svg
       viewBox={`0 0 ${W} ${H}`}
       className="w-full rounded-lg"
-      style={{ maxHeight: 160, background: '#0a0f1e' }}
+      style={{ maxHeight: 160, background: 'var(--lb-panel)' }}
     >
       {/* input -> hidden */}
       {hiddenYs.map((hy, i) => edge(w.w1[i], inX, inY, hidX, hy, `i${i}`))}
@@ -444,12 +442,12 @@ function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
 function Node({ cx, cy, label, bias }: { cx: number; cy: number; label: string; bias?: number }) {
   return (
     <g>
-      <circle cx={cx} cy={cy} r={11} fill="#0f172a" stroke="#22d3ee" strokeWidth={1.5} />
-      <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={9} fill="#e2e8f0" fontWeight={600}>
+      <circle cx={cx} cy={cy} r={11} strokeWidth={1.5} style={{ fill: 'var(--lb-panel)', stroke: 'var(--lb-accent)' }} />
+      <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={9} fontWeight={600} style={{ fill: 'var(--lb-text-heading)' }}>
         {label}
       </text>
       {bias !== undefined && Math.abs(bias) > 0.05 && (
-        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fill="#64748b" fontFamily="ui-monospace, monospace">
+        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fontFamily="ui-monospace, monospace" style={{ fill: 'var(--lb-faint)' }}>
           b={bias.toFixed(2)}
         </text>
       )}

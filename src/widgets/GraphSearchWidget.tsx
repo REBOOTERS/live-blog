@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { prepareCanvas } from '../lib/canvas'
+import { prepareCanvas, palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface GraphSearchProps {
@@ -132,6 +133,7 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
   const [speed, setSpeed] = useState(props.speed)
   useEffect(() => setAlgo(props.algorithm), [props.algorithm])
   useEffect(() => setSpeed(props.speed), [props.speed])
+  const theme = useTheme()
 
   const [seed, setSeed] = useState(1)
   const [idx, setIdx] = useState(0)
@@ -187,6 +189,7 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
     if (!canvas) return
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
+    const P = palette()
     const frontierSet = new Set(step.frontier)
     const orderMap = new Map<number, number>()
     step.visitedOrder.forEach((id, i) => orderMap.set(id, i))
@@ -199,7 +202,7 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
         const x = c * CELL
         const y = r * CELL
         if (wall) {
-          ctx.fillStyle = '#070b16'
+          ctx.fillStyle = P.bg2
         } else {
           // open room cell
           const rr = (r - 1) / 2
@@ -207,13 +210,13 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
           const id = roomId(rr, cc)
           if (orderMap.has(id)) {
             const hue = (orderMap.get(id)! / total) * 280 // red→yellow→green→blue
-            ctx.fillStyle = `hsl(${hue}, 78%, 55%)`
+            ctx.fillStyle = `hsl(${hue}, 72%, 52%)`
           } else if (frontierSet.has(id)) {
-            ctx.fillStyle = 'rgba(251,191,36,0.85)'
+            ctx.fillStyle = 'rgba(251,191,36,0.9)'
           } else if (step.done && pathSet.has(id)) {
-            ctx.fillStyle = '#fde68a'
+            ctx.fillStyle = '#f59e0b'
           } else {
-            ctx.fillStyle = '#141d33'
+            ctx.fillStyle = P.bg
           }
         }
         ctx.fillRect(x, y, CELL, CELL)
@@ -239,13 +242,13 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
     ctx.fillRect(gx - CELL / 2 + 4, gy - CELL / 2 + 4, CELL - 8, CELL - 8)
 
     // start/goal labels
-    ctx.fillStyle = '#0a0f1e'
+    ctx.fillStyle = P.bg2
     ctx.font = `bold ${CELL * 0.42}px ui-monospace, monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('S', sx, sy + 1)
     ctx.fillText('G', gx, gy + 1)
-  }, [grid, step, pathSet])
+  }, [grid, step, pathSet, theme])
 
   const frontier = step.frontier
   const frontierPreview =
@@ -258,42 +261,35 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
       <canvas ref={canvasRef} style={{ width: '100%', aspectRatio: `${W} / ${H}`, borderRadius: 8 }} />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {(['bfs', 'dfs'] as const).map((a) => (
             <button
               key={a}
               onClick={() => setAlgo(a)}
-              className={`rounded-[6px] px-3 py-1 text-xs font-semibold transition ${
-                algo === a
-                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`rounded-[6px] px-3 py-1 text-xs font-semibold transition ${algo === a ? 't-btn-primary' : 't-muted'}`}
             >
               {a === 'bfs' ? '广度优先 BFS' : '深度优先 DFS'}
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setSeed((s) => (s % 9999) + 1)}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10"
-        >
+        <button onClick={() => setSeed((s) => (s % 9999) + 1)} className="t-btn rounded-md px-3 py-1.5 text-xs">
           🎲 新迷宫
         </button>
-        <span className="ml-auto font-mono text-[10px] text-slate-500">
+        <span className="t-faint ml-auto font-mono text-[10px]">
           {C}×{R} 房间 · S=起点（绿）· G=终点（粉）· 颜色=访问顺序（红→蓝）
         </span>
       </div>
 
       {/* frontier visualization */}
-      <div className="mt-2 rounded-lg border border-white/10 bg-slate-950/60 p-2.5">
-        <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-indigo-300/80">
+      <div className="t-panel mt-2 rounded-lg p-2.5">
+        <div className="t-faint mb-1 font-mono text-[10px] uppercase tracking-wider">
           {algo === 'bfs' ? '队列（先进先出 ← 下一個从左出）' : '栈（后进先出 ← 下一個从右出）'} · 共 {frontier.length} 个
         </div>
         <div className="flex min-h-[24px] flex-wrap items-center gap-1">
           {frontier.length === 0 && step.done ? (
             <span className="font-mono text-xs text-emerald-400">✓ 到达终点 G，搜索结束</span>
           ) : frontier.length === 0 ? (
-            <span className="font-mono text-xs text-slate-500">前沿为空</span>
+            <span className="t-faint font-mono text-xs">前沿为空</span>
           ) : (
             <>
               {frontierPreview.map((id, i) => {
@@ -301,13 +297,13 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
                 return (
                   <span
                     key={`${id}-${i}`}
-                    className={`h-3 w-3 rounded-sm ${isNext ? 'ring-2 ring-cyan-300' : ''}`}
-                    style={{ background: isNext ? '#22d3ee' : '#fbbf24' }}
+                    className={`h-3 w-3 rounded-sm ${isNext ? 'ring-2' : ''}`}
+                    style={{ background: isNext ? 'var(--lb-accent)' : '#fbbf24', boxShadow: isNext ? '0 0 0 1px var(--lb-accent)' : undefined }}
                   />
                 )
               })}
-              {frontier.length > 14 && <span className="font-mono text-[10px] text-slate-500">…还有 {frontier.length - 14}</span>}
-              <span className="ml-2 font-mono text-[10px] text-slate-500">{algo === 'bfs' ? '队首→' : '←栈顶'}</span>
+              {frontier.length > 14 && <span className="t-faint font-mono text-[10px]">…还有 {frontier.length - 14}</span>}
+              <span className="t-faint ml-2 font-mono text-[10px]">{algo === 'bfs' ? '队首→' : '←栈顶'}</span>
             </>
           )}
         </div>
@@ -320,56 +316,41 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
             setIdx(0)
             setPlaying(false)
           }}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+          className="t-btn rounded-md px-3 py-1.5 text-sm"
         >
           ⏮ 重置
         </button>
-        <button
-          onClick={() => setIdx((i) => Math.max(0, i - 1))}
-          disabled={idx === 0}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-30"
-        >
+        <button onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx === 0} className="t-btn rounded-md px-3 py-1.5 text-sm disabled:opacity-30">
           ◀
         </button>
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          className="rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-4 py-1.5 text-sm font-semibold text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] hover:brightness-110"
-        >
+        <button onClick={() => setPlaying((p) => !p)} className="t-btn-primary rounded-md px-4 py-1.5 text-sm">
           {playing ? '⏸ 暂停' : '▶ 播放'}
         </button>
         <button
           onClick={() => setIdx((i) => Math.min(steps.length - 1, i + 1))}
           disabled={idx >= steps.length - 1}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-30"
+          className="t-btn rounded-md px-3 py-1.5 text-sm disabled:opacity-30"
         >
           ▶
         </button>
-        <label className="ml-auto flex items-center gap-2 text-xs text-slate-400">
+        <label className="t-muted ml-auto flex items-center gap-2 text-xs">
           <span className="w-10 shrink-0">速度</span>
-          <input
-            type="range"
-            min={1}
-            max={40}
-            step={1}
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="w-28"
-          />
+          <input type="range" min={1} max={40} step={1} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="w-28" />
         </label>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-slate-500">
-        <span className="tabular-nums text-slate-400">步 {idx}/{steps.length - 1}</span>
-        <span className="text-slate-600">·</span>
-        <span className="tabular-nums text-slate-400">已访问 {step.visitedOrder.length}</span>
+      <div className="t-faint mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs">
+        <span className="t-muted tabular-nums">步 {idx}/{steps.length - 1}</span>
+        <span>·</span>
+        <span className="t-muted tabular-nums">已访问 {step.visitedOrder.length}</span>
         {step.done && (
-          <span className="text-cyan-300">
+          <span style={{ color: 'var(--lb-accent)' }}>
             · 到 G 路径长度 {pathSet.size} 步{algo === 'bfs' ? '（最短）' : '（非最短）'}
           </span>
         )}
       </div>
 
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="t-muted mt-2 text-xs">
         {algo === 'bfs'
           ? 'BFS 用队列，一层层向外扩散——按访问顺序上色后形成一圈圈彩虹波纹。到达 G 时即为最短路径（金色）。'
           : 'DFS 用栈，沿一条路扎到底再回退——按访问顺序上色后像一条蜿蜒的长蛇。它快但到 G 的路通常更长。'}

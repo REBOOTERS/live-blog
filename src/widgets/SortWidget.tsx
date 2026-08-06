@@ -173,31 +173,29 @@ function Sort({ props }: { props: SortProps }) {
     <div className="lb-surface">
       {/* algorithm tabs */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-white/10 bg-slate-950/60 p-0.5">
+        <div className="t-panel inline-flex rounded-lg p-0.5">
           {ALGOS.map((a) => (
             <button
               key={a.value}
               onClick={() => setAlgorithm(a.value)}
               className={`rounded-[6px] px-3 py-1 text-sm font-medium transition-colors ${
-                algorithm === a.value
-                  ? 'bg-gradient-to-r from-indigo-500 to-cyan-400 text-slate-950 shadow-[0_0_14px_-4px_rgba(99,102,241,0.9)]'
-                  : 'text-slate-400 hover:text-slate-200'
+                algorithm === a.value ? 't-btn-primary' : 't-muted'
               }`}
             >
               {a.label}
             </button>
           ))}
         </div>
-        <span className="ml-auto rounded-full border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1 font-mono text-xs text-indigo-300">
+        <span
+          className="ml-auto rounded-full px-2.5 py-1 font-mono text-xs"
+          style={{ border: '1px solid var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
+        >
           平均 {activeAlgo.complex}
         </span>
       </div>
 
       {/* chart */}
-      <div
-        className="flex gap-[3px] rounded-lg border border-white/5 bg-slate-950/60 px-2 pt-2"
-        style={{ height: 224 }}
-      >
+      <div className="t-panel flex gap-[3px] rounded-lg px-2 pt-2" style={{ height: 224 }}>
         {step.array.map((v, i) => {
           const isCompare = step.compare?.includes(i)
           const isSwap = step.swap?.includes(i)
@@ -236,79 +234,50 @@ function Sort({ props }: { props: SortProps }) {
 
       {/* transport */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
-          onClick={reset}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
-        >
+        <button onClick={reset} className="t-btn rounded-md px-3 py-1.5 text-sm">
           ⏮ 重置
         </button>
-        <button
-          onClick={stepBack}
-          disabled={idx === 0}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-30"
-        >
+        <button onClick={stepBack} disabled={idx === 0} className="t-btn rounded-md px-3 py-1.5 text-sm disabled:opacity-30">
           ◀ 上一步
         </button>
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          className="rounded-md bg-gradient-to-r from-indigo-500 to-cyan-400 px-4 py-1.5 text-sm font-semibold text-slate-950 shadow-[0_0_16px_-6px_rgba(99,102,241,1)] transition hover:brightness-110"
-        >
+        <button onClick={() => setPlaying((p) => !p)} className="t-btn-primary rounded-md px-4 py-1.5 text-sm">
           {playing ? '⏸ 暂停' : '▶ 播放'}
         </button>
         <button
           onClick={stepForward}
           disabled={idx >= steps.length - 1}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-30"
+          className="t-btn rounded-md px-3 py-1.5 text-sm disabled:opacity-30"
         >
           下一步 ▶
         </button>
-        <button
-          onClick={() => setSeed((s) => s + 1)}
-          className="ml-auto rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
-        >
+        <button onClick={() => setSeed((s) => s + 1)} className="t-btn ml-auto rounded-md px-3 py-1.5 text-sm">
           🎲 新数组
         </button>
       </div>
 
       {/* size & speed sliders */}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <label className="flex items-center gap-2 text-xs text-slate-400">
+        <label className="t-muted flex items-center gap-2 text-xs">
           <span className="w-16 shrink-0">数组长度</span>
-          <input
-            type="range"
-            min={6}
-            max={48}
-            step={1}
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span className="w-6 text-right font-mono tabular-nums text-slate-300">{count}</span>
+          <input type="range" min={6} max={48} step={1} value={count} onChange={(e) => setCount(Number(e.target.value))} className="flex-1" />
+          <span className="t-strong w-6 text-right font-mono tabular-nums">{count}</span>
         </label>
-        <label className="flex items-center gap-2 text-xs text-slate-400">
+        <label className="t-muted flex items-center gap-2 text-xs">
           <span className="w-16 shrink-0">速度</span>
-          <input
-            type="range"
-            min={1}
-            max={60}
-            step={1}
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span className="w-12 text-right font-mono tabular-nums text-slate-300">{speed}/s</span>
+          <input type="range" min={1} max={60} step={1} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="flex-1" />
+          <span className="t-strong w-12 text-right font-mono tabular-nums">{speed}/s</span>
         </label>
       </div>
 
       {/* stats */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-slate-500">
-        <span className="tabular-nums text-slate-400">
+      <div className="t-faint mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs">
+        <span className="t-muted tabular-nums">
           进度 {idx}/{steps.length - 1}
         </span>
-        <span className="text-slate-600">·</span>
-        <span className="tabular-nums text-slate-400">比较 {comparisons}</span>
-        <span className="text-slate-600">·</span>
-        <span className="tabular-nums text-slate-400">交换 {swaps}</span>
+        <span>·</span>
+        <span className="t-muted tabular-nums">比较 {comparisons}</span>
+        <span>·</span>
+        <span className="t-muted tabular-nums">交换 {swaps}</span>
         <span className="ml-auto hidden items-center gap-3 sm:flex">
           <Legend color="#fbbf24" label="比较" />
           <Legend color="#fb7185" label="交换" />
@@ -322,7 +291,7 @@ function Sort({ props }: { props: SortProps }) {
 
 function Legend({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1">
+    <span className="t-muted flex items-center gap-1">
       <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
       {label}
     </span>

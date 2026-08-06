@@ -19,16 +19,22 @@ export function WidgetView({ type, props }: Props) {
   return (
     <figure className="my-8">
       <div className="mb-2 flex items-center gap-2 font-mono text-[11px]">
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-indigo-400/30 bg-indigo-500/10 px-2 py-0.5 font-semibold uppercase tracking-wider text-indigo-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+        <span
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-semibold uppercase tracking-wider"
+          style={{ border: '1px solid var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--lb-accent)', boxShadow: '0 0 8px var(--lb-accent)' }} />
           {def.label}
         </span>
-        <span className="rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 font-semibold uppercase tracking-wider text-cyan-300">
+        <span
+          className="rounded-md px-2 py-0.5 font-semibold uppercase tracking-wider"
+          style={{ border: '1px solid var(--lb-border)', background: 'rgba(34,211,238,0.1)', color: 'var(--lb-accent)' }}
+        >
           可交互
         </span>
       </div>
       <Comp props={props} />
-      <figcaption className="mt-2.5 text-sm text-slate-400">{def.description}</figcaption>
+      <figcaption className="t-muted mt-2.5 text-sm">{def.description}</figcaption>
     </figure>
   )
 }
