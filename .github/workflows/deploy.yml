@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+# 只在推送 v 开头的 tag（如 v1.0.0）时触发部署，避免每次 push 都构建。
+# 触发命令：git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # 也允许在 Actions 页面手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # 注入 Pages 子路径作为 Vite 的 base，对应 https://rebooters.github.io/live-blog/
+      - run: PAGES_BASE=/live-blog/ npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
