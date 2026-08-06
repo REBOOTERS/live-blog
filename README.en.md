@@ -70,6 +70,8 @@ npm run preview    # preview the production build
 
 Requirements: Node v24+, npm.
 
+> 📡 **Deploying to GitHub Pages?** See [DEPLOY.md](./DEPLOY.md).
+
 ---
 
 ## 🛠️ Tech stack

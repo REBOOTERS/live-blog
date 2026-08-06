@@ -70,6 +70,8 @@ npm run preview    # 预览生产构建
 
 环境要求：Node v24+，npm。
 
+> 📡 **部署到 GitHub Pages？** 参见 [DEPLOY.md](./DEPLOY.md)。
+
 ---
 
 ## 🛠️ 技术栈
