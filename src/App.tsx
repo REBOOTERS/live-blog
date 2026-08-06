@@ -14,11 +14,25 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('read')
   const [draft, setDraft] = useState<Article | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [query, setQuery] = useState('')
 
   const current = useMemo(
     () => articles.find((a) => a.id === currentId) ?? articles[0],
     [articles, currentId],
   )
+
+  // sidebar search: match title / description / text-block content
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return articles
+    return articles.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.blocks.some((b) => b.kind === 'text' && b.content.toLowerCase().includes(q)),
+    )
+  }, [articles, query])
 
   // sync draft when switching into edit mode / changing article
   useEffect(() => {
@@ -135,21 +149,67 @@ export default function App() {
       </header>
 
       <div className="mx-auto flex max-w-6xl gap-7 px-4 py-7">
+        {/* Desktop expand rail - shown when sidebar is collapsed */}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            title="展开目录"
+            aria-label="展开目录"
+            className="hidden w-9 shrink-0 items-start justify-center pt-3 text-slate-500 hover:text-cyan-300 md:flex"
+          >
+            <span className="text-lg">►</span>
+          </button>
+        )}
+
         {/* Sidebar */}
         <aside
-          className={`${
-            sidebarOpen ? 'block' : 'hidden'
-          } w-60 shrink-0 md:block`}
+          className={`w-60 shrink-0 ${
+            collapsed
+              ? sidebarOpen
+                ? 'block md:hidden'
+                : 'hidden md:hidden'
+              : sidebarOpen
+                ? 'block md:block'
+                : 'hidden md:block'
+          }`}
         >
           <div className="sticky top-20 space-y-3">
+            {/* search + collapse header */}
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-500">🔍</span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜索文章…"
+                  className="w-full rounded-md border border-white/10 bg-slate-950/60 py-1.5 pl-7 pr-2 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20"
+                />
+              </div>
+              <button
+                onClick={() => setCollapsed(true)}
+                title="收起目录"
+                aria-label="收起目录"
+                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 md:flex"
+              >
+                ◀
+              </button>
+            </div>
+
             <button
               onClick={createArticle}
               className="w-full rounded-lg border border-dashed border-indigo-400/40 bg-indigo-500/5 px-3 py-2 text-sm font-medium text-indigo-200 transition hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-100"
             >
               + 新建文章
             </button>
+
+            {query.trim() && (
+              <div className="px-1 font-mono text-[10px] text-slate-500">
+                {filtered.length ? `${filtered.length} 篇匹配` : '无匹配'}
+              </div>
+            )}
+
             <div className="space-y-1">
-              {articles.map((a) => (
+              {filtered.map((a) => (
                 <div
                   key={a.id}
                   className={`group cursor-pointer rounded-lg border-l-2 px-3 py-2 text-sm transition-all ${
@@ -164,6 +224,9 @@ export default function App() {
                   }}
                 >
                   <div className="line-clamp-2 font-medium leading-snug">{a.title || '无标题'}</div>
+                  {a.description && (
+                    <div className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{a.description}</div>
+                  )}
                   <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
                     <span className="font-mono">{new Date(a.updatedAt).toLocaleDateString()}</span>
                     <button
@@ -178,6 +241,11 @@ export default function App() {
                   </div>
                 </div>
               ))}
+              {query.trim() && filtered.length === 0 && (
+                <div className="px-3 py-6 text-center text-xs text-slate-600">
+                  没有匹配「{query.trim()}」的文章
+                </div>
+              )}
             </div>
           </div>
         </aside>
