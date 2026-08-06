@@ -57,7 +57,7 @@ LiveBlog 把每一个知识点都拆成「**讲故事 → 给你一个能玩的�
 ## 🚀 快速开始
 
 ```bash
-git clone <your-fork-url>
+git clone https://github.com/REBOOTERS/live-blog.git
 cd live-blog
 npm install
 npm run dev        # 本地开发：http://localhost:5173

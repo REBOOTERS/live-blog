@@ -57,7 +57,7 @@ LiveBlog structures every topic as **tell the story → give a playable model �
 ## 🚀 Quick start
 
 ```bash
-git clone <your-fork-url>
+git clone https://github.com/REBOOTERS/live-blog.git
 cd live-blog
 npm install
 npm run dev        # local dev: http://localhost:5173
