@@ -27,8 +27,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # 注入 Pages 子路径作为 Vite 的 base，对应 https://rebooters.github.io/live-blog/
-      - run: PAGES_BASE=/live-blog/ npm run build
+      - run: npm run build   # 生产构建自动用 /live-blog/ 子路径（见 vite.config.ts）
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

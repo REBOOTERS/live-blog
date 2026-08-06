@@ -15,22 +15,25 @@
 
 ## 1. 配置 `base` 路径（关键）
 
-GitHub Pages 的项目站点地址是 `https://<user>.github.io/<repo>/`，**子路径 `/repo/` 不能少**。Vite 默认 `base: '/'` 会导致打包后的 JS/CSS 仍指向根路径，部署后白屏。必须改 `base`。
+GitHub Pages 的项目站点地址是 `https://<user>.github.io/<repo>/`，**子路径 `/repo/` 不能少**。Vite 默认 `base: '/'` 会导致打包后的 JS/CSS 仍指向根路径，部署后白屏。
 
-本项目用环境变量注入，本地 dev 不受影响：
+本项目按构建模式自动判定 base，本地 dev 不受影响、CI 无需注入环境变量：
 
 ```ts
 // vite.config.ts
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
-  // CI 里注入 PAGES_BASE=/live-blog/；本地 dev / preview 保持 '/'
-  base: process.env.PAGES_BASE || '/',
-})
+  // 生产构建默认带 /live-blog/ 子路径；dev / preview 保持 '/'
+  base: mode === 'production' ? process.env.PAGES_BASE || '/live-blog/' : '/',
+}))
 ```
 
-CI 构建时用 `PAGES_BASE=/live-blog/ npm run build` 即可生成带子路径的产物。若你换仓库名，把 workflow 里的 `PAGES_BASE` 一并改掉。
+- `npm run dev`（development）-> base `/`，本地开发不受影响。
+- `npm run build`（production）-> base `/live-blog/`，对应 `https://rebooters.github.io/live-blog/`。
+- 若换仓库名，改 `/live-blog/` 为 `/<新仓库名>/`。
+- 若用自定义域名（根路径访问），构建时设 `PAGES_BASE=/` 覆盖。
 
-> **用户/组织站点**（仓库名为 `<user>.github.io`）部署在根域名 `https://<user>.github.io/`，保持 `base: '/'` 即可，无需注入 `PAGES_BASE`。
+> **用户/组织站点**（仓库名为 `<user>.github.io`）部署在根域名，把上面的 `/live-blog/` 改成 `/` 即可。
 
 ---
 
@@ -66,7 +69,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: PAGES_BASE=/live-blog/ npm run build   # 注入子路径 base
+      - run: npm run build   # 生产构建自动用 /live-blog/ 子路径
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -114,18 +117,16 @@ npm install -D gh-pages
 
 ### 3.2 加脚本
 
-在 `package.json` 的 `scripts` 里加一行（注意带上 `PAGES_BASE` 以注入子路径）：
+在 `package.json` 的 `scripts` 里加一行（生产构建已自动带 `/live-blog/` 子路径，无需额外环境变量）：
 
 ```json
 "scripts": {
   "dev": "vite",
   "build": "tsc -b && vite build",
   "preview": "vite preview",
-  "deploy": "PAGES_BASE=/live-blog/ npm run build && gh-pages -d dist"
+  "deploy": "npm run build && gh-pages -d dist"
 }
 ```
-
-> Windows 本地跑 `npm run deploy` 时，`PAGES_BASE=...` 前缀在 cmd/PowerShell 不生效，可改用 Git Bash，或临时 `set PAGES_BASE=/live-blog/` 后再 `npm run build && gh-pages -d dist`。
 
 ### 3.3 发布
 
@@ -189,18 +190,11 @@ Actions 日志里看 `npm run build` 那一步。常见是类型检查未过（`
 
 ## 附录：本地预览生产构建
 
-部署前可本地预览（base 为 `/`，预览服务器根路径即可）：
+部署前可本地预览（生产构建已带 `/live-blog/` 子路径）：
 
 ```bash
 npm run build
 npm run preview
 ```
 
-若要精确模拟线上子路径，用 Git Bash 跑：
-
-```bash
-PAGES_BASE=/live-blog/ npm run build
-npm run preview
-```
-
-浏览器打开 `http://localhost:4173/` 检查。
+浏览器打开 `http://localhost:4173/live-blog/` 检查（preview 会按 base 路径提供）。
