@@ -4,6 +4,8 @@
 
 English | [简体中文](./README.md)
 
+🌐 **Live demo**: <https://rebooters.github.io/live-blog/>
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-18-61dafb.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
