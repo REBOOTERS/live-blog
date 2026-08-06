@@ -31,7 +31,8 @@ jobs:
       - run: npm ci
       # 注入 Pages 子路径作为 Vite 的 base，对应 https://rebooters.github.io/live-blog/
       - run: PAGES_BASE=/live-blog/ npm run build
-      - id: pages
+      - name: Check GitHub Pages status
+        id: pages
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
