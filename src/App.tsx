@@ -155,9 +155,11 @@ export default function App() {
             onClick={() => setCollapsed(false)}
             title="展开目录"
             aria-label="展开目录"
-            className="hidden w-9 shrink-0 items-start justify-center pt-3 text-slate-500 hover:text-cyan-300 md:flex"
+            className="hidden w-9 shrink-0 items-center justify-center rounded-md border border-white/10 bg-slate-950/40 text-slate-500 transition hover:border-cyan-400/40 hover:text-cyan-300 md:flex"
           >
-            <span className="text-lg">►</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </button>
         )}
 
@@ -189,9 +191,11 @@ export default function App() {
                 onClick={() => setCollapsed(true)}
                 title="收起目录"
                 aria-label="收起目录"
-                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 md:flex"
+                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-slate-400 transition hover:bg-white/10 hover:text-slate-200 md:flex"
               >
-                ◀
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
               </button>
             </div>
 
