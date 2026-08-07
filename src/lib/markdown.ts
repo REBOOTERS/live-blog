@@ -1,6 +1,6 @@
 // Tiny markdown renderer. Supports: headings, bold, italic, inline code, fenced
-// code blocks (with syntax highlighting), links, lists (ul/ol), blockquotes, hr.
-// Math ($...$ inline, $$...$$ block) is rendered with KaTeX.
+// code blocks (with syntax highlighting), links, lists (ul/ol), blockquotes, hr,
+// GFM tables. Math ($...$ inline, $$...$$ block) is rendered with KaTeX.
 //
 // Safety: prose is escaped before inline formatting. Code spans and math are
 // extracted from the RAW string into placeholder slots first, so KaTeX receives
@@ -65,6 +65,41 @@ function codeCard(lang: string, code: string): string {
     '<button type="button" class="code-copy" data-copy aria-label="复制代码">复制</button>' +
     `</div><pre><code data-lang="${escapeHtml(lang)}">${body}</code></pre></div>`
   )
+}
+
+// GFM table: a header row containing `|`, followed by a separator line
+// (---|:---|---:|) that defines the column count, then 0+ data rows. Leading
+// and trailing pipes on every line are optional.
+const TABLE_SEP_RE = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/
+
+function isTableSeparator(line: string): boolean {
+  return TABLE_SEP_RE.test(line)
+}
+
+function splitTableCells(line: string): string[] {
+  let t = line.trim()
+  if (t.startsWith('|')) t = t.slice(1)
+  if (t.endsWith('|')) t = t.slice(0, -1)
+  return t.split('|').map(c => c.trim())
+}
+
+function renderTable(headerCells: string[], rows: string[][]): string {
+  const cols = headerCells.length
+  const ths = headerCells.map(h => `<th>${inline(h)}</th>`).join('')
+  const body = rows
+    .map(r => {
+      // pad / trim so every row has exactly `cols` cells
+      const padded = r.slice(0, cols)
+      while (padded.length < cols) padded.push('')
+      return '<tr>' + padded.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>'
+    })
+    .join('')
+  // The wrapper carries the card surface + horizontal scroll. Keeping the
+  // inner <table> at its default `display: table` is critical — only then does
+  // the table layout algorithm distribute cell widths across the wrapper, so
+  // the table fills the available width instead of shrinking to content with a
+  // huge blank area on the right.
+  return `<div class="lb-table-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${body}</tbody></table></div>`
 }
 
 export function renderMarkdown(src: string): string {
@@ -181,6 +216,27 @@ export function renderMarkdown(src: string): string {
       continue
     }
 
+    // GFM table: a `|`-bearing header line followed by a separator. Must run
+    // BEFORE paragraph collection so header + body rows don't get concatenated
+    // into a single <p>.
+    if (line.includes('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      closeList()
+      const headers = splitTableCells(line)
+      i += 2
+      const rows: string[][] = []
+      while (
+        i < lines.length &&
+        lines[i].trim() &&
+        lines[i].includes('|') &&
+        !isTableSeparator(lines[i])
+      ) {
+        rows.push(splitTableCells(lines[i]))
+        i++
+      }
+      html.push(renderTable(headers, rows))
+      continue
+    }
+
     closeList()
     // paragraph: gather consecutive non-empty, non-special lines
     const buf: string[] = []
@@ -192,7 +248,8 @@ export function renderMarkdown(src: string): string {
       !/^---+\s*$/.test(lines[i]) &&
       !/^>\s?/.test(lines[i]) &&
       !/^\s*[-*]\s+/.test(lines[i]) &&
-      !/^\s*\d+\.\s+/.test(lines[i])
+      !/^\s*\d+\.\s+/.test(lines[i]) &&
+      !isTableSeparator(lines[i])
     ) {
       buf.push(lines[i])
       i++

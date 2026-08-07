@@ -356,19 +356,55 @@ textarea {
   margin: 2.4em 0;
   background: linear-gradient(90deg, transparent, var(--lb-accent-2), var(--lb-accent), transparent);
 }
+.prose-lb .lb-table-wrap {
+  display: block;
+  margin: 1.4em 0;
+  overflow-x: auto;
+  border-radius: 0.6em;
+  border: 1px solid var(--lb-surface-border);
+  background: var(--lb-panel-soft);
+  box-shadow: 0 8px 24px -18px rgba(2, 6, 23, 0.9);
+}
+/* Keep <table> at its native display: table so the table layout algorithm
+   distributes cell widths to fill the wrapper. Using `display: block` here
+   would disable that and leave a huge blank area on the right. */
 .prose-lb table {
-  border-collapse: collapse;
-  margin: 1.2em 0;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95em;
+}
+.prose-lb thead {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(34, 211, 238, 0.12));
 }
 .prose-lb th,
 .prose-lb td {
-  border: 1px solid var(--lb-border-soft);
-  padding: 0.4em 0.7em;
+  padding: 0.65em 0.95em;
+  border-bottom: 1px solid var(--lb-border-soft);
+  border-right: 1px solid var(--lb-border-soft);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.6;
+}
+.prose-lb th:last-child,
+.prose-lb td:last-child {
+  border-right: none;
+}
+.prose-lb tbody tr:last-child th,
+.prose-lb tbody tr:last-child td {
+  border-bottom: none;
 }
 .prose-lb th {
-  background: var(--lb-panel);
-  color: var(--lb-text-strong);
+  color: var(--lb-text-heading);
   font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.prose-lb tbody tr {
+  transition: background 0.15s;
+}
+.prose-lb tbody tr:hover {
+  background: rgba(99, 102, 241, 0.07);
 }
 
 /* ============================================================
