@@ -1,85 +1,103 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Theme tokens. Dark is the default; [data-theme="light"]
-   overrides. Components should use the semantic .t-* classes or
-   var(--lb-*) directly so they adapt automatically.
+   Theme tokens. Light is the default (editorial / premium);
+   [data-theme="dark"] overrides. Components use the semantic
+   .t-* classes or var(--lb-*) so they adapt automatically.
+
+   Design language: restraint. One accent, hairline borders,
+   soft shadows, generous whitespace, a serif display face for
+   article titles. Widget "figures" stay a dark plate in both
+   themes so the interactive canvases read as exhibits.
    ============================================================ */
 :root {
-  --lb-bg-1: #070b16;
-  --lb-bg-2: #050810;
-  --lb-glow-1: rgba(79, 70, 229, 0.22);
-  --lb-glow-2: rgba(34, 211, 238, 0.14);
-  --lb-grid: rgba(148, 163, 184, 0.045);
+  --lb-bg-1: #fbfbfd;
+  --lb-bg-2: #f5f5f7;
+  --lb-glow-1: transparent;
+  --lb-glow-2: transparent;
+  --lb-grid: transparent;
 
-  --lb-surface-bg: linear-gradient(180deg, rgba(20, 27, 48, 0.85), rgba(9, 13, 26, 0.92));
-  --lb-surface-border: rgba(129, 140, 248, 0.18);
-  --lb-surface-hi: linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.7), rgba(34, 211, 238, 0.5), transparent);
-  --lb-surface-shadow: 0 18px 40px -22px rgba(2, 6, 23, 0.9);
+  --lb-surface-bg: #ffffff;
+  --lb-surface-border: rgba(0, 0, 0, 0.1);
+  --lb-surface-hi: rgba(255, 255, 255, 0.7);
+  --lb-surface-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -20px rgba(0, 0, 0, 0.18);
 
-  --lb-panel: #0a0f1e;       /* inner panels / chart areas / tab strips */
-  --lb-panel-soft: rgba(2, 6, 23, 0.6);
-  --lb-input-bg: #0a0f1e;
-
-  --lb-text: #cbd5e1;
-  --lb-text-strong: #e2e8f0;
-  --lb-text-heading: #f1f5f9;
-  --lb-muted: #94a3b8;
-  --lb-faint: #64748b;
-
-  --lb-border: rgba(129, 140, 248, 0.18);
-  --lb-border-soft: rgba(255, 255, 255, 0.08);
-  --lb-hover: rgba(255, 255, 255, 0.06);
-
-  --lb-accent: #22d3ee;
-  --lb-accent-2: #818cf8;
-  --lb-accent-grad: linear-gradient(135deg, #6366f1, #22d3ee);
-
-  --lb-range-track: rgba(148, 163, 184, 0.22);
-  --lb-selection: rgba(129, 140, 248, 0.32);
-
-  /* code card stays dark in both themes */
-  --lb-code-bg: #070b16;
-  --lb-code-head: linear-gradient(180deg, #0d1424, #0a0f1d);
-  --lb-code-border: rgba(129, 140, 248, 0.2);
-}
-
-[data-theme='light'] {
-  --lb-bg-1: #f8fafc;
-  --lb-bg-2: #eef2f7;
-  --lb-glow-1: rgba(99, 102, 241, 0.1);
-  --lb-glow-2: rgba(34, 211, 238, 0.08);
-  --lb-grid: rgba(100, 116, 139, 0.07);
-
-  --lb-surface-bg: linear-gradient(180deg, #ffffff, #f8fafc);
-  --lb-surface-border: rgba(99, 102, 241, 0.2);
-  --lb-surface-hi: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.55), rgba(34, 211, 238, 0.4), transparent);
-  --lb-surface-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.25);
-
-  --lb-panel: #f1f5f9;
-  --lb-panel-soft: rgba(241, 245, 249, 0.7);
+  --lb-panel: #f5f5f7;
+  --lb-panel-soft: rgba(0, 0, 0, 0.025);
   --lb-input-bg: #ffffff;
 
-  --lb-text: #334155;
-  --lb-text-strong: #1e293b;
-  --lb-text-heading: #0f172a;
-  --lb-muted: #64748b;
-  --lb-faint: #94a3b8;
+  --lb-text: #333336;
+  --lb-text-strong: #1d1d1f;
+  --lb-text-heading: #1d1d1f;
+  --lb-muted: #6e6e73;
+  --lb-faint: #86868b;
 
-  --lb-border: rgba(99, 102, 241, 0.2);
-  --lb-border-soft: rgba(15, 23, 42, 0.1);
-  --lb-hover: rgba(15, 23, 42, 0.05);
+  --lb-border: rgba(0, 0, 0, 0.1);
+  --lb-border-soft: rgba(0, 0, 0, 0.07);
+  --lb-hover: rgba(0, 0, 0, 0.04);
 
-  --lb-accent: #4f46e5;
-  --lb-accent-2: #6366f1;
-  --lb-accent-grad: linear-gradient(135deg, #6366f1, #06b6d4);
+  --lb-accent: #0071e3;
+  --lb-accent-2: #0071e3;
+  --lb-accent-grad: linear-gradient(135deg, #0071e3, #0a84ff);
 
-  --lb-range-track: rgba(100, 116, 139, 0.2);
-  --lb-selection: rgba(99, 102, 241, 0.22);
+  --lb-range-track: rgba(0, 0, 0, 0.12);
+  --lb-selection: rgba(0, 113, 227, 0.18);
 
-  --lb-code-bg: #0b1220;
-  --lb-code-head: linear-gradient(180deg, #0d1424, #0a0f1d);
-  --lb-code-border: rgba(99, 102, 241, 0.25);
+  /* widget figure plate + code card stay dark in both themes */
+  --lb-figure-bg: linear-gradient(180deg, #11141a, #0a0d13);
+  --lb-figure-border: rgba(255, 255, 255, 0.08);
+  --lb-figure-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 40px -22px rgba(0, 0, 0, 0.55);
+
+  --lb-code-bg: #0b0e14;
+  --lb-code-head: linear-gradient(180deg, #11151e, #0d1017);
+  --lb-code-border: rgba(255, 255, 255, 0.08);
+
+  --lb-font-display: ui-serif, Georgia, "Times New Roman", "Songti SC",
+    "Source Han Serif SC", "Noto Serif CJK SC", "STSong", serif;
+}
+
+[data-theme='dark'] {
+  /* Elevation ladder, darkest → lightest:
+     page (#0a0b0e) < code/figure (#11141a) < card (#16181d) < panel (#1d2027) */
+  --lb-bg-1: #0a0b0e;
+  --lb-bg-2: #05060a;
+
+  --lb-surface-bg: #16181d;
+  --lb-surface-border: rgba(255, 255, 255, 0.09);
+  --lb-surface-hi: rgba(255, 255, 255, 0.05);
+  --lb-surface-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 48px -28px rgba(0, 0, 0, 0.9);
+
+  --lb-panel: #1d2027;
+  --lb-panel-soft: rgba(255, 255, 255, 0.04);
+  --lb-input-bg: #14161b;
+
+  --lb-text: #c2c3c7;
+  --lb-text-strong: #f0f1f4;
+  --lb-text-heading: #f6f7fa;
+  --lb-muted: #9a9ca3;
+  --lb-faint: #6e7078;
+
+  --lb-border: rgba(255, 255, 255, 0.1);
+  --lb-border-soft: rgba(255, 255, 255, 0.07);
+  --lb-hover: rgba(255, 255, 255, 0.055);
+
+  --lb-accent: #2997ff;
+  --lb-accent-2: #2997ff;
+  --lb-accent-grad: linear-gradient(135deg, #2997ff, #5ac8fa);
+
+  --lb-range-track: rgba(255, 255, 255, 0.14);
+  --lb-selection: rgba(41, 151, 255, 0.3);
+
+  /* widget figure: sits above page, below cards, framed by a hairline + top sheen */
+  --lb-figure-bg: linear-gradient(180deg, #13161d, #0c0f15);
+  --lb-figure-border: rgba(255, 255, 255, 0.09);
+  --lb-figure-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 50px -24px rgba(0, 0, 0, 0.85);
+
+  --lb-code-bg: #11141a;
+  --lb-code-head: linear-gradient(180deg, #181c25, #13161d);
+  --lb-code-border: rgba(255, 255, 255, 0.09);
 }
 
 html,
@@ -90,59 +108,45 @@ body,
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: var(--lb-text);
   background-color: var(--lb-bg-1);
-  background-image:
-    radial-gradient(900px 520px at 12% -8%, var(--lb-glow-1), transparent 60%),
-    radial-gradient(820px 480px at 92% 0%, var(--lb-glow-2), transparent 55%),
-    linear-gradient(180deg, var(--lb-bg-1) 0%, var(--lb-bg-2) 100%);
+  background-image: linear-gradient(180deg, var(--lb-bg-1) 0%, var(--lb-bg-2) 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  transition: background-color 0.25s, color 0.25s;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    linear-gradient(var(--lb-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--lb-grid) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 80%);
-}
-
-#root {
-  position: relative;
-  z-index: 1;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ::selection {
   background: var(--lb-selection);
-  color: #fff;
+  color: var(--lb-text-heading);
 }
 
-/* Scrollbar */
+/* Scrollbar — quiet and thin */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--lb-accent-2) transparent;
+  scrollbar-color: rgba(120, 120, 128, 0.4) transparent;
 }
 *::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--lb-accent-2), var(--lb-accent));
+  background: rgba(120, 120, 128, 0.35);
   border-radius: 999px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 128, 0.55);
   background-clip: padding-box;
 }
 
-/* Range input */
+/* Range input — minimal */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
@@ -154,38 +158,48 @@ input[type='range'] {
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--lb-accent-grad);
-  border: 2px solid var(--lb-bg-1);
-  box-shadow: 0 0 0 1px var(--lb-border), 0 0 10px rgba(99, 102, 241, 0.5);
+  background: #fff;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 0 color-mix(in srgb, var(--lb-accent) 18%, transparent);
   cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+[data-theme='dark'] input[type='range']::-webkit-slider-thumb {
+  background: #f5f5f7;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), 0 0 0 6px color-mix(in srgb, var(--lb-accent) 14%, transparent);
 }
 input[type='range']::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--lb-accent-grad);
-  border: 2px solid var(--lb-bg-1);
+  background: #fff;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   cursor: pointer;
 }
 input[type='number'],
 input[type='text'],
+input[type='search'],
 select,
 textarea {
-  color-scheme: dark;
-}
-[data-theme='light'] input[type='number'],
-[data-theme='light'] input[type='text'],
-[data-theme='light'] select,
-[data-theme='light'] textarea {
   color-scheme: light;
+}
+[data-theme='dark'] input[type='number'],
+[data-theme='dark'] input[type='text'],
+[data-theme='dark'] input[type='search'],
+[data-theme='dark'] select,
+[data-theme='dark'] textarea {
+  color-scheme: dark;
 }
 
 /* ============================================================
-   Semantic theme classes (use these in components instead of
-   hardcoded slate-* utilities so they adapt to both themes).
+   Semantic theme classes
    ============================================================ */
 .t-text { color: var(--lb-text); }
 .t-strong { color: var(--lb-text-strong); }
@@ -199,152 +213,153 @@ textarea {
 }
 .t-input {
   background: var(--lb-input-bg);
-  border: 1px solid var(--lb-border-soft);
+  border: 1px solid var(--lb-border);
   color: var(--lb-text-strong);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .t-input:focus {
   border-color: var(--lb-accent);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
 }
 .t-btn {
-  background: var(--lb-panel-soft);
-  border: 1px solid var(--lb-border-soft);
-  color: var(--lb-text);
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  background: transparent;
+  border: 1px solid var(--lb-border);
+  color: var(--lb-text-strong);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 .t-btn:hover {
   background: var(--lb-hover);
-  color: var(--lb-text-strong);
+}
+.t-btn:active {
+  transform: scale(0.98);
 }
 .t-btn-primary {
-  background: var(--lb-accent-grad);
-  color: #0a0f1e;
-  font-weight: 600;
-  box-shadow: 0 0 16px -6px rgba(99, 102, 241, 0.9);
-  transition: filter 0.15s;
+  background: var(--lb-accent);
+  color: #fff;
+  font-weight: 500;
+  border: 1px solid var(--lb-accent);
+  transition: filter 0.15s ease, transform 0.1s ease;
 }
 .t-btn-primary:hover {
   filter: brightness(1.08);
+}
+.t-btn-primary:active {
+  transform: scale(0.98);
 }
 .t-border {
   border-color: var(--lb-border-soft);
 }
 
 /* ============================================================
-   Surface - widget / card container
+   Surface — widget figure plate (stays dark in both themes so
+   the interactive canvases read as embedded exhibits).
    ============================================================ */
 .lb-surface {
   position: relative;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid var(--lb-surface-border);
   background: var(--lb-surface-bg);
   padding: 1rem;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02), var(--lb-surface-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--lb-surface-shadow);
   overflow: hidden;
-  transition: background 0.25s, border-color 0.25s;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .lb-surface::before {
   content: "";
   position: absolute;
   top: 0;
-  left: 12%;
-  right: 12%;
+  left: 0;
+  right: 0;
   height: 1px;
   background: var(--lb-surface-hi);
 }
 .lb-surface canvas,
 .lb-surface svg {
   display: block;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* ============================================================
-   Prose - rendered markdown blocks (.prose-lb)
+   Prose — rendered markdown blocks (.prose-lb)
    ============================================================ */
 .prose-lb {
-  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   color: var(--lb-text);
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  letter-spacing: -0.003em;
 }
-.prose-lb > p:first-child,
-.prose-lb > h1:first-child,
-.prose-lb > h2:first-child,
-.prose-lb > h3:first-child {
+.prose-lb > *:first-child {
   margin-top: 0;
 }
+.prose-lb > *:last-child {
+  margin-bottom: 0;
+}
 .prose-lb p {
-  margin: 1.15em 0;
-  line-height: 1.85;
+  margin: 1.25em 0;
 }
 .prose-lb h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 1.4em 0 0.5em;
-  line-height: 1.3;
+  font-family: var(--lb-font-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  margin: 1.6em 0 0.5em;
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--lb-text-heading);
 }
 .prose-lb h2 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin: 1.8em 0 0.5em;
+  font-size: 1.45rem;
+  font-weight: 650;
+  margin: 2.2em 0 0.6em;
   line-height: 1.3;
   letter-spacing: -0.018em;
   color: var(--lb-text-heading);
-  padding-left: 0.7rem;
-  border-left: 3px solid;
-  border-image: var(--lb-accent-grad) 1;
 }
 .prose-lb h3 {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 600;
-  margin: 1.3em 0 0.4em;
-  letter-spacing: -0.01em;
+  margin: 1.6em 0 0.5em;
+  letter-spacing: -0.012em;
   color: var(--lb-text-strong);
 }
-.prose-lb ul {
-  list-style: disc;
-  padding-left: 1.5em;
-  margin: 1em 0;
-}
+.prose-lb ul,
 .prose-lb ol {
-  list-style: decimal;
-  padding-left: 1.5em;
-  margin: 1em 0;
+  padding-left: 1.4em;
+  margin: 1.2em 0;
 }
+.prose-lb ul { list-style: disc; }
+.prose-lb ol { list-style: decimal; }
 .prose-lb li {
-  margin: 0.4em 0;
-  line-height: 1.8;
+  margin: 0.5em 0;
+  line-height: 1.75;
 }
 .prose-lb li::marker {
-  color: var(--lb-accent-2);
+  color: var(--lb-faint);
 }
 .prose-lb code {
-  background: rgba(99, 102, 241, 0.16);
-  color: var(--lb-accent-2);
-  padding: 0.14em 0.45em;
-  border-radius: 0.35em;
+  background: var(--lb-panel);
+  color: var(--lb-text-strong);
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
   font-size: 0.88em;
-  border: 1px solid var(--lb-border);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border: 1px solid var(--lb-border-soft);
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 .prose-lb a {
   color: var(--lb-accent);
   text-decoration: none;
-  border-bottom: 1px solid var(--lb-border);
-  transition: color 0.15s, border-color 0.15s;
+  border-bottom: 1px solid color-mix(in srgb, var(--lb-accent) 35%, transparent);
+  transition: border-color 0.15s ease;
 }
 .prose-lb a:hover {
-  filter: brightness(1.1);
+  border-bottom-color: var(--lb-accent);
 }
 .prose-lb blockquote {
-  border-left: 3px solid;
-  border-image: var(--lb-accent-grad) 1;
-  padding: 0.3em 0 0.3em 1.1em;
+  border-left: 2px solid var(--lb-border);
+  padding: 0.2em 0 0.2em 1.1em;
   color: var(--lb-muted);
-  margin: 1.4em 0;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), transparent);
+  margin: 1.5em 0;
+  font-style: italic;
 }
 .prose-lb strong {
   font-weight: 650;
@@ -353,21 +368,19 @@ textarea {
 .prose-lb hr {
   border: none;
   height: 1px;
-  margin: 2.4em 0;
-  background: linear-gradient(90deg, transparent, var(--lb-accent-2), var(--lb-accent), transparent);
+  margin: 2.8em auto;
+  width: 100%;
+  background: var(--lb-border-soft);
 }
 .prose-lb .lb-table-wrap {
   display: block;
-  margin: 1.4em 0;
+  margin: 1.6em 0;
   overflow-x: auto;
-  border-radius: 0.6em;
-  border: 1px solid var(--lb-surface-border);
-  background: var(--lb-panel-soft);
-  box-shadow: 0 8px 24px -18px rgba(2, 6, 23, 0.9);
+  border-radius: 12px;
+  border: 1px solid var(--lb-border-soft);
+  background: var(--lb-surface-bg);
+  box-shadow: var(--lb-surface-shadow);
 }
-/* Keep <table> at its native display: table so the table layout algorithm
-   distributes cell widths to fill the wrapper. Using `display: block` here
-   would disable that and leave a huge blank area on the right. */
 .prose-lb table {
   width: 100%;
   border-collapse: separate;
@@ -375,11 +388,11 @@ textarea {
   font-size: 0.95em;
 }
 .prose-lb thead {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(34, 211, 238, 0.12));
+  background: var(--lb-panel);
 }
 .prose-lb th,
 .prose-lb td {
-  padding: 0.65em 0.95em;
+  padding: 0.75em 1em;
   border-bottom: 1px solid var(--lb-border-soft);
   border-right: 1px solid var(--lb-border-soft);
   text-align: left;
@@ -397,79 +410,65 @@ textarea {
 .prose-lb th {
   color: var(--lb-text-heading);
   font-weight: 600;
-  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 .prose-lb tbody tr {
-  transition: background 0.15s;
+  transition: background 0.15s ease;
 }
 .prose-lb tbody tr:hover {
-  background: rgba(99, 102, 241, 0.07);
+  background: var(--lb-hover);
 }
 
 /* ============================================================
-   Code card - fenced code blocks (stays dark in both themes)
+   Code card — fenced code blocks (stays dark in both themes)
    ============================================================ */
 .prose-lb .code-card {
-  margin: 1.4em 0;
-  border-radius: 0.75em;
+  margin: 1.6em 0;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--lb-code-border);
-  box-shadow: 0 10px 30px -18px rgba(2, 6, 23, 0.9);
+  box-shadow: 0 10px 30px -20px rgba(0, 0, 0, 0.7);
 }
 .prose-lb .code-head {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   background: var(--lb-code-head);
-  padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid rgba(129, 140, 248, 0.14);
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-.prose-lb .code-head .dots {
-  display: inline-flex;
-}
-.prose-lb .code-head .dots i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 6px;
-}
-.prose-lb .code-head .dots i:nth-child(1) { background: #ff5f56; }
-.prose-lb .code-head .dots i:nth-child(2) { background: #ffbd2e; }
-.prose-lb .code-head .dots i:nth-child(3) { background: #27c93f; }
 .prose-lb .code-lang {
-  color: #818cf8;
-  font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  letter-spacing: 0.08em;
+  color: rgba(235, 240, 250, 0.5);
+  font: 500 11px/1 ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .prose-lb .code-copy {
   margin-left: auto;
-  color: #94a3b8;
-  background: rgba(148, 163, 184, 0.08);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  border-radius: 0.35em;
+  color: rgba(235, 240, 250, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
   font-size: 11px;
-  padding: 0.2em 0.6em;
+  padding: 0.25em 0.65em;
   cursor: pointer;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .prose-lb .code-copy:hover {
-  color: #e2e8f0;
-  border-color: rgba(129, 140, 248, 0.5);
-  background: rgba(99, 102, 241, 0.15);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
 }
 .prose-lb pre {
   background: var(--lb-code-bg);
   color: #c8d3e8;
-  padding: 1em 1.15em;
+  padding: 1.1em 1.25em;
   overflow-x: auto;
   margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.65;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 .prose-lb pre code {
   background: transparent;
@@ -488,19 +487,16 @@ textarea {
 .prose-lb .tok-punct { color: #89ddff; }
 
 /* ============================================================
-   Math - KaTeX
+   Math — KaTeX
    ============================================================ */
 .prose-lb .math-block {
-  margin: 1.4em 0;
-  padding: 0.9em 1em;
+  margin: 1.6em 0;
+  padding: 1.1em 1.2em;
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 0.6em;
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.07), rgba(34, 211, 238, 0.04));
-  border: 1px solid var(--lb-border);
-}
-[data-theme='light'] .prose-lb .math-block {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.06), rgba(6, 182, 212, 0.04));
+  border-radius: 12px;
+  background: var(--lb-panel);
+  border: 1px solid var(--lb-border-soft);
 }
 .prose-lb .math-block .katex-display {
   margin: 0;
@@ -510,11 +506,11 @@ textarea {
   color: var(--lb-text-strong);
 }
 .prose-lb .math-error {
-  color: #fca5a5;
+  color: #d64545;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  padding: 0.1em 0.4em;
-  border-radius: 0.3em;
+  background: rgba(214, 69, 69, 0.08);
+  border: 1px solid rgba(214, 69, 69, 0.2);
+  padding: 0.15em 0.45em;
+  border-radius: 6px;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
 import { prepareCanvas, palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface PendulumProps {
@@ -18,6 +19,7 @@ const MAX_PX_LEN = H - PIVOT.y - 60 // pixels available for the rod
 
 export function Pendulum({ props }: { props: PendulumProps }) {
   const { length, gravity, damping, initialAngle, showEnergy } = props
+  useTheme() // re-render so palette() re-reads on theme switch
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const draggingRef = useRef(false)
 
@@ -103,7 +105,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     const by = PIVOT.y + L * Math.cos(theta)
 
     // trail arc
-    ctx.strokeStyle = 'rgba(129,140,248,0.35)'
+    ctx.strokeStyle = P.soft
     ctx.setLineDash([4, 4])
     ctx.beginPath()
     ctx.arc(PIVOT.x, PIVOT.y, L, Math.PI / 2 - 0.9, Math.PI / 2 + 0.9)
@@ -111,7 +113,7 @@ export function Pendulum({ props }: { props: PendulumProps }) {
     ctx.setLineDash([])
 
     // rod
-    ctx.strokeStyle = '#64748b'
+    ctx.strokeStyle = P.muted
     ctx.lineWidth = 3
     ctx.beginPath()
     ctx.moveTo(PIVOT.x, PIVOT.y)
@@ -131,10 +133,10 @@ export function Pendulum({ props }: { props: PendulumProps }) {
       (L / 100) * propsRef.current.gravity * (1 - Math.cos(theta))
     const r = 18
     const grad = ctx.createRadialGradient(bx - 5, by - 5, 2, bx, by, r)
-    grad.addColorStop(0, '#a5b4fc')
-    grad.addColorStop(1, '#6366f1')
+    grad.addColorStop(0, P.accent2)
+    grad.addColorStop(1, P.accent)
     ctx.fillStyle = grad
-    ctx.shadowColor = 'rgba(99,102,241,0.6)'
+    ctx.shadowColor = P.glow
     ctx.shadowBlur = 16
     ctx.beginPath()
     ctx.arc(bx, by, r, 0, Math.PI * 2)

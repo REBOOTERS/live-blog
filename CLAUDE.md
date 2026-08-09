@@ -156,8 +156,9 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 - 文件内组件命名：默认导出组件与具名 WidgetDefinition 导出（如 `PendulumWidget`）。
 - 优先使用 `clsx` 之外的模板字符串做条件 class（项目未引入 clsx）。
 - Tailwind utility 为主，自定义样式集中在 `index.css`：`.prose-lb` 排版、`.lb-surface` 卡片、滚动条、range 控件霓虹样式。
-- **整体为深色科技主题**：body 深色渐变 + 径向辉光 + 网格底纹；主色为 indigo (`#6366f1`/`#818cf8`) 与 cyan (`#22d3ee`) 的霓虹渐变。所有 Widget 外层统一用 `.lb-surface`（深色玻璃卡片 + 顶部高光边线），不要用浅色 `bg-white`/`bg-slate-100`。
-- **画布配色约定**：Canvas/SVG 背景用 `#0a0f1e`/`#070b16`，网格用 `rgba(148,163,184,0.08)`、轴线 `rgba(129,140,248,0.3)`；主曲线用 cyan `#22d3ee` + 发光（`shadowBlur` / SVG `feGaussianBlur` glow filter），对照/原始数据用灰色 `rgba(148,163,184,...)`；强调色：红 `#fb7185`、黄 `#fbbf24`、绿 `#34d399`、粉 `#f472b6`。文字用 `#e2e8f0`/`#94a3b8` + 等宽字体显示数值。
+- **整体为浅色编辑型高级博客主题（Apple 风）**：默认浅色（`#fbfbfd`/`#f5f5f7`），无手动选择时跟随系统 `prefers-color-scheme`（见 `index.html` 预涂脚本与 `src/lib/theme.ts`）；主色为单一克制的蓝色（`#0071e3` 浅色 / `#2997ff` 深色）；大量留白、发丝边（hairline）、柔和阴影；文章大标题用衬线字体（`--lb-font-display`）。**不要再加霓虹辉光、网格底纹、渐变分隔线、发光徽章**。Widget 外层 `.lb-surface` **跟随主题**（浅色=白卡片 `var(--lb-surface-bg)`，深色=深卡片），与正文融为一体；面板用 `var(--lb-panel)`。
+- **画布配色约定（跟随主题，禁止硬编码）**：Widget 的 Canvas/SVG 配色必须通过 `src/lib/canvas.ts` 的 `palette()` 获取，**不要写死 `#22d3ee`/`#6366f1`/`#0a0f1e` 等深色霓虹值**——这些在浅色主题下会变成「黑卡片装隐形内容」。`palette()` 按当前 `data-theme` 返回整套语义色：`bg`/`bg2`/`grid`/`axis`/`text`/`muted`/`faint`/`ghost`，以及强调色 `accent`（浅色 `#0071e3`/深色 `#22d3ee`）、`accent2`、`soft`、`glow`、`warn`/`danger`/`good`/`pink`。需要带 alpha 的强调色（如 SVG stroke 热力）用 `hexToRgba(P.accent, a)` 辅助（见 `BackpropWidget`/`TransformerWidget`）。**主题切换重绘**：画布/组件必须在顶层调用 `useTheme()` 触发重渲染（仅 `useAnimationFrame` 的回调不会自动响应主题），否则切主题后画布不更新。
+- **特例：ColorWidget 混色画布**：三原色混色的画布背景由**物理模式**决定、与主题无关——加色（光 `additive`）必须深背景（暗室），减色（颜料 `subtractive`）必须白底（白纸）。标签文字对比度也随之取深/浅。这是演示正确性，不要为「统一跟随主题」而破坏。
 - 所有 Canvas 须处理 HiDPI（DPR scaling），并按 `aspect-ratio` 自适应宽度，保证清晰与尺寸合理。
 - 中文作为界面与文案语言；代码标识符用英文。
 - 不使用第三方图标库，需要时优先内联 SVG 或 emoji。
@@ -165,7 +166,9 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 
 ## 当前已知 / 进行中的工作
 
-> 最后更新：2026-08-05
+> 最后更新：2026-08-09
+
+- **2026-08-09 视觉改版为高级博客风**：默认改为浅色编辑型主题（Apple 官网风），夜间模式仍在（顶栏右上角切换；无手动选择时跟随系统 `prefers-color-scheme`，见 `index.html` 预涂脚本与 `src/lib/theme.ts`）。去掉了霓虹辉光/网格底纹/渐变分隔线/发光徽章；主色统一为单一蓝；文章标题用衬线字体；圆角更大（胶囊按钮、12–16px 卡片）。**关键：`.lb-surface` 与全部 11 个 Widget 画布都跟随主题**——`palette()`（`src/lib/canvas.ts`）按 `data-theme` 返回浅/深两套语义色，所有 Widget 经 `useTheme()` 在切主题时重绘；硬编码的青/靛深色值已全部替换为 `palette()` 取值（唯一例外是 ColorWidget 混色画布，其背景由加/减色物理模式决定）。代码块仍保留深色窗口栏（但去掉了红黄绿圆点）。新增 UI 请遵循上面的「整体为浅色编辑型高级博客主题」「画布配色约定」两条。
 
 - 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵/三原色）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
 - 内置示例共十一篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历。localStorage key 已升至 `v6`，迁移逻辑见 `storage.ts`。

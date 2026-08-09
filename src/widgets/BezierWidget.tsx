@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface BezierProps {
@@ -33,6 +34,7 @@ function clamp(v: number, lo: number, hi: number) {
 export function Bezier({ props }: { props: BezierProps }) {
   const { animate, showConstruction, color } = props
   const P = palette()
+  useTheme()
   const [t, setT] = useState(0.4)
   const tRef = useRef(0.4)
   const dragRef = useRef<HandleId | null>(null)
@@ -148,32 +150,32 @@ export function Bezier({ props }: { props: BezierProps }) {
         <rect width={W} height={H} fill="url(#bz-grid)" />
 
         {/* control polygon */}
-        <path d={ctrlPath} fill="none" stroke="rgba(148,163,184,0.4)" strokeWidth={1.5} strokeDasharray="5 4" />
+        <path d={ctrlPath} fill="none" stroke={P.ghost} strokeWidth={1.5} strokeDasharray="5 4" />
 
         {/* cubic curve */}
         <path d={path} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" filter="url(#bz-glow)" />
 
         {showConstruction && (
           <>
-            <line x1={a01.x} y1={a01.y} x2={a12.x} y2={a12.y} stroke="#7dd3fc" strokeWidth={1.5} />
-            <line x1={a12.x} y1={a12.y} x2={a23.x} y2={a23.y} stroke="#7dd3fc" strokeWidth={1.5} />
-            <line x1={b012.x} y1={b012.y} x2={b123.x} y2={b123.y} stroke="#fbbf24" strokeWidth={1.5} />
-            <circle cx={a01.x} cy={a01.y} r={4} fill="#7dd3fc" />
-            <circle cx={a12.x} cy={a12.y} r={4} fill="#7dd3fc" />
-            <circle cx={a23.x} cy={a23.y} r={4} fill="#7dd3fc" />
-            <circle cx={b012.x} cy={b012.y} r={4} fill="#fbbf24" />
-            <circle cx={b123.x} cy={b123.y} r={4} fill="#fbbf24" />
+            <line x1={a01.x} y1={a01.y} x2={a12.x} y2={a12.y} stroke={P.warn} strokeWidth={1.5} />
+            <line x1={a12.x} y1={a12.y} x2={a23.x} y2={a23.y} stroke={P.warn} strokeWidth={1.5} />
+            <line x1={b012.x} y1={b012.y} x2={b123.x} y2={b123.y} stroke={P.good} strokeWidth={1.5} />
+            <circle cx={a01.x} cy={a01.y} r={4} fill={P.warn} />
+            <circle cx={a12.x} cy={a12.y} r={4} fill={P.warn} />
+            <circle cx={a23.x} cy={a23.y} r={4} fill={P.warn} />
+            <circle cx={b012.x} cy={b012.y} r={4} fill={P.good} />
+            <circle cx={b123.x} cy={b123.y} r={4} fill={P.good} />
           </>
         )}
 
         {/* moving point on curve */}
-        <circle cx={c0123.x} cy={c0123.y} r={7} fill="#fb7185" filter="url(#bz-glow)" />
+        <circle cx={c0123.x} cy={c0123.y} r={7} fill={P.danger} filter="url(#bz-glow)" />
 
         {/* endpoints / handles */}
-        <Handle pt={p0} color="#22d3ee" onPointerDown={onHandleDown(0)} />
-        <Handle pt={p1} color="#a5b4fc" onPointerDown={onHandleDown(1)} />
-        <Handle pt={p2} color="#a5b4fc" onPointerDown={onHandleDown(2)} />
-        <Handle pt={p3} color="#22d3ee" onPointerDown={onHandleDown(3)} />
+        <Handle pt={p0} color={P.accent} onPointerDown={onHandleDown(0)} />
+        <Handle pt={p1} color={P.accent2} onPointerDown={onHandleDown(1)} />
+        <Handle pt={p2} color={P.accent2} onPointerDown={onHandleDown(2)} />
+        <Handle pt={p3} color={P.accent} onPointerDown={onHandleDown(3)} />
       </svg>
 
       <div className="mt-3 flex items-center gap-3">

@@ -100,28 +100,35 @@ export default function App() {
     <div className="min-h-full">
       <header
         className="sticky top-0 z-20 border-b backdrop-blur-xl"
-        style={{ borderColor: 'var(--lb-border-soft)', background: 'color-mix(in srgb, var(--lb-bg-1) 70%, transparent)' }}
+        style={{
+          borderColor: 'var(--lb-border-soft)',
+          background: 'color-mix(in srgb, var(--lb-bg-1) 72%, transparent)',
+        }}
       >
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-5 sm:px-8">
           <button
-            className="t-muted rounded-md p-1.5 hover:bg-[var(--lb-hover)] md:hidden"
+            className="t-muted -ml-1 rounded-lg p-2 hover:bg-[var(--lb-hover)] md:hidden"
             onClick={() => setSidebarOpen((o) => !o)}
             aria-label="菜单"
           >
-            ☰
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 text-slate-950 shadow-[0_0_22px_-4px_rgba(99,102,241,0.8)]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex items-center gap-2.5 select-none">
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-lg"
+              style={{ background: 'var(--lb-accent-grad)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 20 L12 4 L20 20" />
-                <circle cx="12" cy="20" r="1.7" fill="currentColor" />
               </svg>
             </div>
-            <div>
-              <div className="t-heading text-sm font-semibold leading-tight tracking-tight">
-                <span className="font-mono" style={{ color: 'var(--lb-accent)' }}>❯</span> LiveBlog
-              </div>
-              <div className="t-faint font-mono text-[10px] uppercase leading-tight tracking-[0.18em]">interactive · writing</div>
+            <div
+              className="t-heading text-[17px] font-semibold tracking-tight"
+              style={{ fontFamily: 'var(--lb-font-display)' }}
+            >
+              LiveBlog
             </div>
           </div>
 
@@ -130,54 +137,47 @@ export default function App() {
               onClick={toggleTheme}
               title={theme === 'dark' ? '切换到日间模式' : '切换到夜间模式'}
               aria-label="切换主题"
-              className="t-btn flex h-9 w-9 items-center justify-center rounded-md"
+              className="t-btn flex h-9 w-9 items-center justify-center rounded-full"
             >
               {theme === 'dark' ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="4" />
                   <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
                 </svg>
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
                 </svg>
               )}
             </button>
             {mode === 'edit' ? (
               <>
-                <button
-                  onClick={() => setMode('read')}
-                  className="t-btn rounded-md px-3 py-1.5 text-sm"
-                >
+                <button onClick={() => setMode('read')} className="t-btn rounded-full px-4 py-1.5 text-sm">
                   取消
                 </button>
-                <button onClick={save} className="t-btn-primary rounded-md px-4 py-1.5 text-sm">
+                <button onClick={save} className="t-btn-primary rounded-full px-4 py-1.5 text-sm">
                   保存
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => setMode('edit')}
-                className="rounded-md border px-4 py-1.5 text-sm font-medium transition"
-                style={{ borderColor: 'var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
-              >
-                ✎ 编辑
+              <button onClick={() => setMode('edit')} className="t-btn-primary rounded-full px-4 py-1.5 text-sm">
+                编辑
               </button>
             )}
           </div>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-6xl gap-7 px-4 py-7">
+      <div className="mx-auto flex max-w-6xl gap-10 px-5 py-10 sm:px-8 md:py-14">
         {/* Desktop expand rail - shown when sidebar is collapsed */}
         {collapsed && (
           <button
             onClick={() => setCollapsed(false)}
             title="展开目录"
             aria-label="展开目录"
-            className="t-btn sticky top-7 hidden h-9 w-9 shrink-0 items-center justify-center self-start rounded-md md:flex"
+            className="t-btn sticky top-20 hidden h-9 w-9 shrink-0 items-center justify-center self-start rounded-full md:flex"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
@@ -185,7 +185,7 @@ export default function App() {
 
         {/* Sidebar */}
         <aside
-          className={`w-60 shrink-0 ${
+          className={`w-64 shrink-0 ${
             collapsed
               ? sidebarOpen
                 ? 'block md:hidden'
@@ -195,86 +195,89 @@ export default function App() {
                 : 'hidden md:block'
           }`}
         >
-          <div className="sticky top-20 space-y-3">
-            {/* search + collapse header */}
-            <div className="flex items-center gap-1.5">
-              <div className="relative flex-1">
-                <span className="t-faint pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs">🔍</span>
+          <div className="sticky top-20 space-y-6">
+            <div className="space-y-3">
+              <div className="relative">
+                <svg
+                  className="t-faint pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+                  width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索文章…"
-                  className="t-input w-full rounded-md py-1.5 pl-7 pr-2 text-sm outline-none transition placeholder:text-[var(--lb-faint)]"
+                  placeholder="搜索文章"
+                  className="t-input w-full rounded-full py-2 pl-9 pr-3 text-sm outline-none placeholder:text-[var(--lb-faint)]"
                 />
               </div>
               <button
-                onClick={() => setCollapsed(true)}
-                title="收起目录"
-                aria-label="收起目录"
-                className="t-btn hidden h-8 w-8 shrink-0 items-center justify-center rounded-md md:flex"
+                onClick={createArticle}
+                className="t-btn flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 18l-6-6 6-6" />
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M12 5v14M5 12h14" />
                 </svg>
+                写文章
               </button>
             </div>
 
-            <button
-              onClick={createArticle}
-              className="w-full rounded-lg border border-dashed px-3 py-2 text-sm font-medium transition"
-              style={{ borderColor: 'var(--lb-border)', background: 'rgba(99,102,241,0.06)', color: 'var(--lb-accent-2)' }}
-            >
-              + 新建文章
-            </button>
-
-            {query.trim() && (
-              <div className="t-faint px-1 font-mono text-[10px]">
-                {filtered.length ? `${filtered.length} 篇匹配` : '无匹配'}
+            <nav>
+              <div className="t-faint mb-2 px-2 text-[11px] font-medium uppercase tracking-[0.14em]">
+                {query.trim() ? (filtered.length ? `${filtered.length} 篇匹配` : '无匹配') : '全部文章'}
               </div>
-            )}
-
-            <div className="space-y-1">
-              {filtered.map((a) => (
-                <div
-                  key={a.id}
-                  className={`group cursor-pointer rounded-lg border-l-2 px-3 py-2 text-sm transition-all ${
-                    a.id === currentId ? '' : 't-muted hover:bg-[var(--lb-hover)]'
-                  }`}
-                  style={
-                    a.id === currentId
-                      ? { borderColor: 'var(--lb-accent)', background: 'linear-gradient(90deg, rgba(99,102,241,0.15), transparent)', color: 'var(--lb-text-strong)' }
-                      : { borderColor: 'transparent' }
-                  }
-                  onClick={() => {
-                    setCurrentId(a.id)
-                    setMode('read')
-                    setSidebarOpen(false)
-                  }}
-                >
-                  <div className="line-clamp-2 font-medium leading-snug">{a.title || '无标题'}</div>
-                  {a.description && (
-                    <div className="t-faint mt-0.5 line-clamp-1 text-[11px]">{a.description}</div>
-                  )}
-                  <div className="t-faint mt-1 flex items-center justify-between text-[11px]">
-                    <span className="font-mono">{new Date(a.updatedAt).toLocaleDateString()}</span>
-                    <button
-                      className="opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeArticle(a.id)
+              <div className="space-y-0.5">
+                {filtered.map((a) => {
+                  const active = a.id === currentId
+                  return (
+                    <div
+                      key={a.id}
+                      className={`group cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
+                        active ? '' : 'hover:bg-[var(--lb-hover)]'
+                      }`}
+                      style={active ? { background: 'var(--lb-hover)' } : undefined}
+                      onClick={() => {
+                        setCurrentId(a.id)
+                        setMode('read')
+                        setSidebarOpen(false)
                       }}
                     >
-                      删除
-                    </button>
+                      <div
+                        className={`line-clamp-2 text-[14.5px] leading-snug ${
+                          active ? 't-strong font-semibold' : 't-text font-medium'
+                        }`}
+                      >
+                        {a.title || '无标题'}
+                      </div>
+                      <div className="t-faint mt-1 flex items-center gap-2 text-[11.5px]">
+                        <span>{new Date(a.updatedAt).toLocaleDateString()}</span>
+                        <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                        <span>{readingTime(a)} 分钟阅读</span>
+                        <button
+                          className="t-faint ml-auto opacity-0 transition group-hover:opacity-100 hover:text-rose-500"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeArticle(a.id)
+                          }}
+                          aria-label="删除文章"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m1 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                {query.trim() && filtered.length === 0 && (
+                  <div className="t-faint px-3 py-8 text-center text-xs">
+                    没有匹配「{query.trim()}」的文章
                   </div>
-                </div>
-              ))}
-              {query.trim() && filtered.length === 0 && (
-                <div className="t-faint px-3 py-6 text-center text-xs">
-                  没有匹配「{query.trim()}」的文章
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </nav>
           </div>
         </aside>
 
@@ -312,29 +315,31 @@ function readingTime(a: Article): number {
 }
 
 function ReadView({ article }: { article: Article }) {
+  const hasWidget = article.blocks.some((b) => b.kind === 'widget')
   return (
-    <article>
-      <div
-        className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em]"
-        style={{ border: '1px solid var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
-      >
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: 'var(--lb-accent)' }} />
-        Interactive Article
+    <article className="mx-auto max-w-3xl">
+      <div className="t-faint mb-4 text-[12px] font-medium uppercase tracking-[0.18em]">
+        {hasWidget ? '交互式文章' : '文章'}
       </div>
-      <h1 className="t-heading text-3xl font-bold leading-tight tracking-tight md:text-[2.6rem]">
+      <h1
+        className="t-heading text-[2.1rem] font-semibold leading-[1.12] tracking-[-0.022em] sm:text-[2.75rem] md:text-[3.1rem]"
+        style={{ fontFamily: 'var(--lb-font-display)' }}
+      >
         {article.title}
       </h1>
       {article.description && (
-        <p className="t-muted mt-4 text-lg leading-relaxed">{article.description}</p>
+        <p className="t-muted mt-5 text-[1.22rem] leading-[1.55] tracking-[-0.01em]">
+          {article.description}
+        </p>
       )}
-      <div className="t-faint mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs">
+      <div className="t-faint mt-6 flex flex-wrap items-center gap-x-3 text-[13px]">
         <span className="t-muted">{new Date(article.updatedAt).toLocaleDateString()}</span>
-        <span>/</span>
+        <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
         <span>{article.blocks.length} 个段落</span>
-        <span>/</span>
-        <span>约 {readingTime(article)} 分钟阅读</span>
+        <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+        <span>{readingTime(article)} 分钟阅读</span>
       </div>
-      <div className="my-9 h-px" style={{ background: 'linear-gradient(90deg, transparent, var(--lb-accent-2), var(--lb-accent), transparent)' }} />
+      <div className="my-10 h-px" style={{ background: 'var(--lb-border-soft)' }} />
       <div>
         {article.blocks.map((b) => (
           <BlockRenderer key={b.id} block={b} />
@@ -363,21 +368,22 @@ function EditView({
 }: EditProps) {
   const [adding, setAdding] = useState(false)
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-3xl space-y-5">
       <input
         value={draft.title}
         onChange={(e) => onChange({ ...draft, title: e.target.value })}
         placeholder="文章标题"
-        className="t-heading w-full bg-transparent text-3xl font-bold leading-tight outline-none placeholder:text-[var(--lb-faint)]"
+        className="t-heading w-full bg-transparent text-[2.1rem] font-semibold leading-[1.12] tracking-[-0.022em] outline-none placeholder:text-[var(--lb-faint)] sm:text-[2.4rem]"
+        style={{ fontFamily: 'var(--lb-font-display)' }}
       />
       <input
         value={draft.description}
         onChange={(e) => onChange({ ...draft, description: e.target.value })}
         placeholder="一句话简介（可选）"
-        className="t-muted w-full bg-transparent text-base outline-none placeholder:text-[var(--lb-faint)]"
+        className="t-muted w-full bg-transparent text-[1.05rem] outline-none placeholder:text-[var(--lb-faint)]"
       />
 
-      <div className="space-y-3">
+      <div className="space-y-3 pt-2">
         {draft.blocks.map((b, i) => (
           <BlockEditor
             key={b.id}
@@ -394,30 +400,32 @@ function EditView({
       <div className="relative">
         <button
           onClick={() => setAdding((v) => !v)}
-          className="w-full rounded-xl border-2 border-dashed py-3 text-sm font-medium transition"
-          style={{ borderColor: 'var(--lb-border)', background: 'rgba(99,102,241,0.05)', color: 'var(--lb-accent-2)' }}
+          className="t-btn flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-medium"
         >
-          + 添加段落
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          添加段落
         </button>
         {adding && (
-          <div className="t-panel mt-2 rounded-xl p-3 shadow-2xl backdrop-blur" style={{ background: 'var(--lb-surface-bg)' }}>
+          <div className="t-panel mt-2 rounded-2xl p-3 shadow-xl" style={{ background: 'var(--lb-surface-bg)' }}>
             <button
               onClick={() => {
                 onAddBlock('text')
                 setAdding(false)
               }}
-              className="t-strong mb-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-[var(--lb-hover)]"
+              className="mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--lb-hover)]"
             >
-              <span className="text-xl">📝</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg text-lg" style={{ background: 'var(--lb-panel)' }}>📝</span>
               <span>
                 <span className="t-strong block text-sm font-medium">文字段落</span>
                 <span className="t-faint block text-xs">Markdown 文字、标题、列表、代码</span>
               </span>
             </button>
-            <div className="t-faint mb-1 px-3 font-mono text-[10px] uppercase tracking-[0.18em]">
+            <div className="t-faint mb-1 px-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em]">
               交互组件
             </div>
-            <div className="grid gap-1">
+            <div className="grid">
               {listWidgets().map((w) => (
                 <button
                   key={w.type}
@@ -425,9 +433,9 @@ function EditView({
                     onAddBlock('widget', w.type)
                     setAdding(false)
                   }}
-                  className="t-strong flex items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-[var(--lb-hover)]"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--lb-hover)]"
                 >
-                  <span className="text-xl">{w.icon}</span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg text-lg" style={{ background: 'var(--lb-panel)' }}>{w.icon}</span>
                   <span>
                     <span className="t-strong block text-sm font-medium">{w.label}</span>
                     <span className="t-faint block text-xs">{w.description}</span>

@@ -115,7 +115,7 @@ export function Matrix({ props }: { props: MatrixProps }) {
   const shapePath = polygonPath(transformed)
   const origPath = polygonPath(SHAPE)
 
-  const fill = collapsed ? '#64748b' : reversed ? '#fb7185' : '#22d3ee'
+  const fill = collapsed ? P.faint : reversed ? P.danger : P.accent
 
   return (
     <div className="lb-surface">
@@ -140,11 +140,11 @@ export function Matrix({ props }: { props: MatrixProps }) {
         {showGrid && <Grid />}
 
         {/* original shape (faint dashed) */}
-        <path d={origPath} fill="none" stroke="rgba(148,163,184,0.35)" strokeWidth={0.04} strokeDasharray="0.12 0.08" pointerEvents="none" />
+        <path d={origPath} fill="none" stroke={P.ghost} strokeWidth={0.04} strokeDasharray="0.12 0.08" pointerEvents="none" />
 
         {/* original unit basis (faint) */}
-        <line x1={0} y1={0} x2={1} y2={0} stroke="rgba(251,113,133,0.35)" strokeWidth={0.03} pointerEvents="none" />
-        <line x1={0} y1={0} x2={0} y2={1} stroke="rgba(56,189,248,0.35)" strokeWidth={0.03} pointerEvents="none" />
+        <line x1={0} y1={0} x2={1} y2={0} stroke={P.ghost} strokeWidth={0.03} pointerEvents="none" />
+        <line x1={0} y1={0} x2={0} y2={1} stroke={P.ghost} strokeWidth={0.03} pointerEvents="none" />
 
         {/* transformed shape */}
         <path
@@ -159,12 +159,12 @@ export function Matrix({ props }: { props: MatrixProps }) {
         />
 
         {/* transformed basis vectors = columns of M */}
-        <Arrow x={a} y={-c} color="#fb7185" label="î→" />
-        <Arrow x={b} y={-d} color="#38bdf8" label="ĵ→" />
+        <Arrow x={a} y={-c} color={P.danger} label="î→" />
+        <Arrow x={b} y={-d} color={P.accent2} label="ĵ→" />
 
         {/* draggable tips */}
-        <Handle cx={a} cy={-c} color="#fb7185" onPointerDown={onTipDown(0)} />
-        <Handle cx={b} cy={-d} color="#38bdf8" onPointerDown={onTipDown(1)} />
+        <Handle cx={a} cy={-c} color={P.danger} onPointerDown={onTipDown(0)} />
+        <Handle cx={b} cy={-d} color={P.accent2} onPointerDown={onTipDown(1)} />
       </svg>
 
       <div className="mt-3 flex flex-wrap items-start gap-4">
@@ -183,7 +183,7 @@ export function Matrix({ props }: { props: MatrixProps }) {
             <div className="t-muted">
               det(M) = <span className="t-strong font-mono">{det.toFixed(2)}</span>
             </div>
-            <div className="mt-1 font-medium" style={{ color: collapsed ? P.faint : reversed ? '#fb7185' : '#06b6d4' }}>
+            <div className="mt-1 font-medium" style={{ color: collapsed ? P.faint : reversed ? P.danger : P.accent }}>
               {collapsed ? '降维：图形被压扁成一条线（奇异矩阵）' : reversed ? `镜像翻转，面积缩放 ${Math.abs(det).toFixed(2)}×` : `保持定向，面积缩放 ${Math.abs(det).toFixed(2)}×`}
             </div>
           </div>

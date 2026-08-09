@@ -6,13 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LiveBlog · 交互式写作平台</title>
     <script>
-      // Apply saved theme before first paint to avoid a flash of the wrong theme.
+      // Apply theme before first paint to avoid a flash. Honors the saved
+      // choice; otherwise follows the OS preference (prefers-color-scheme).
       (function () {
         try {
-          var t = localStorage.getItem('liveblog:theme') || 'dark'
+          var saved = localStorage.getItem('liveblog:theme')
+          var t =
+            saved ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light')
           document.documentElement.dataset.theme = t
         } catch (e) {
-          document.documentElement.dataset.theme = 'dark'
+          document.documentElement.dataset.theme = 'light'
         }
       })()
     </script>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
 import { prepareCanvas, palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface SoundProps {
@@ -17,6 +18,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
   const { mode: modeProp } = props
   const [mode, setMode] = useState<SoundProps['mode']>(modeProp)
   useEffect(() => setMode(modeProp), [modeProp])
+  useTheme() // re-render so palette() re-reads on theme switch
 
   // live controls (mirror nothing to props — these are reader-only tweaks)
   const [freq1, setFreq1] = useState(261.63) // C4
@@ -170,7 +172,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
         else ctx.lineTo(x, y)
       }
       ctx.stroke()
-      ctx.strokeStyle = 'rgba(96,165,250,0.35)'
+      ctx.strokeStyle = P.ghost
       ctx.beginPath()
       for (let x = 0; x <= W; x++) {
         const phase = (x / W) * Math.PI * 2 * 2
@@ -181,10 +183,10 @@ export function SoundWave({ props }: { props: SoundProps }) {
       ctx.stroke()
     }
 
-    // composite wave (neon)
-    ctx.strokeStyle = '#22d3ee'
+    // composite wave
+    ctx.strokeStyle = P.accent
     ctx.lineWidth = 2.5
-    ctx.shadowColor = 'rgba(34,211,238,0.55)'
+    ctx.shadowColor = P.glow
     ctx.shadowBlur = 10
     ctx.beginPath()
     for (let x = 0; x <= W; x++) {
@@ -201,7 +203,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
     ctx.fillText(md === 'single' ? `${f1.toFixed(1)} Hz · ${waveName(wv)}` : `${f1.toFixed(1)} + ${f2.toFixed(1)} Hz`, PAD, 18)
     if (md === 'beats') {
       const beat = Math.abs(f1 - f2)
-      ctx.fillStyle = '#fbbf24'
+      ctx.fillStyle = P.warn
       ctx.fillText(`拍频 ≈ ${beat.toFixed(1)} Hz（每秒起伏 ${beat.toFixed(1)} 次）`, PAD, H - 8)
     }
   }
@@ -239,7 +241,7 @@ export function SoundWave({ props }: { props: SoundProps }) {
           style={
             playing
               ? { background: 'rgba(244,63,94,0.9)', color: '#fff' }
-              : { background: 'var(--lb-accent-grad)', color: '#0a0f1e' }
+              : { background: 'var(--lb-accent-grad)', color: '#fff' }
           }
         >
           {playing ? '⏸ 停止' : '▶ 发声'}

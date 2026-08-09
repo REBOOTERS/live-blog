@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
 import { prepareCanvas, palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface ProjectileProps {
@@ -55,6 +56,7 @@ const IDLE: State = {
 
 export function Projectile({ props }: { props: ProjectileProps }) {
   const { gravity, showVelocity, airDrag, trail } = props
+  useTheme() // re-render so palette() re-reads on theme switch
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const draggingRef = useRef(false)
   const aimRef = useRef<{ vx: number; vy: number; speed: number } | null>(null)
@@ -165,7 +167,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     ctx.fillRect(0, 0, W, H)
 
     // ground
-    ctx.fillStyle = 'rgba(34,211,238,0.07)'
+    ctx.fillStyle = P.soft
     ctx.fillRect(0, ORIGIN.y, W, H - ORIGIN.y)
     ctx.strokeStyle = P.axis
     ctx.lineWidth = 1
@@ -187,9 +189,10 @@ export function Projectile({ props }: { props: ProjectileProps }) {
 
     // trail
     if (showTrail && s.trail.length > 1) {
-      ctx.strokeStyle = 'rgba(34,211,238,0.5)'
+      ctx.strokeStyle = P.accent
+      ctx.globalAlpha = 0.55
       ctx.lineWidth = 2
-      ctx.shadowColor = 'rgba(34,211,238,0.6)'
+      ctx.shadowColor = P.glow
       ctx.shadowBlur = 8
       ctx.beginPath()
       s.trail.forEach((pt, i) => {
@@ -200,6 +203,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
       })
       ctx.stroke()
       ctx.shadowBlur = 0
+      ctx.globalAlpha = 1
     }
 
     const aim = aimRef.current
@@ -208,7 +212,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     if (aim) {
       const pts = predict(aim.vx, aim.vy, g, d)
       if (pts.length > 1) {
-        ctx.strokeStyle = 'rgba(148,163,184,0.7)'
+        ctx.strokeStyle = P.ghost
         ctx.lineWidth = 1.5
         ctx.setLineDash([4, 5])
         ctx.beginPath()
@@ -237,7 +241,7 @@ export function Projectile({ props }: { props: ProjectileProps }) {
         ORIGIN.y,
         ORIGIN.x + (aim.vx / aim.speed) * aimLen,
         ORIGIN.y - (aim.vy / aim.speed) * aimLen,
-        '#22d3ee',
+        P.accent,
       )
       const angle = (Math.atan2(aim.vy, aim.vx) * 180) / Math.PI
       ctx.fillStyle = P.muted
@@ -250,10 +254,10 @@ export function Projectile({ props }: { props: ProjectileProps }) {
     const px = ORIGIN.x + s.x * SCALE
     const py = ORIGIN.y - s.y * SCALE
     const ballGrad = ctx.createRadialGradient(px - 2, py - 2, 1, px, py, 8)
-    ballGrad.addColorStop(0, '#a5b4fc')
-    ballGrad.addColorStop(1, '#6366f1')
+    ballGrad.addColorStop(0, P.accent2)
+    ballGrad.addColorStop(1, P.accent)
     ctx.fillStyle = ballGrad
-    ctx.shadowColor = 'rgba(99,102,241,0.7)'
+    ctx.shadowColor = P.glow
     ctx.shadowBlur = 14
     ctx.beginPath()
     ctx.arc(px, py, 8, 0, Math.PI * 2)
@@ -262,9 +266,9 @@ export function Projectile({ props }: { props: ProjectileProps }) {
 
     // velocity vectors during flight
     if (showVelocity && s.flying) {
-      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py, '#fb7185', 'vx')
-      drawArrow(ctx, px, py, px, py - s.vy * SCALE * 0.3, '#34d399', 'vy')
-      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py - s.vy * SCALE * 0.3, '#e2e8f0')
+      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py, P.danger, 'vx')
+      drawArrow(ctx, px, py, px, py - s.vy * SCALE * 0.3, P.good, 'vy')
+      drawArrow(ctx, px, py, px + s.vx * SCALE * 0.3, py - s.vy * SCALE * 0.3, P.text)
     }
 
     // origin marker

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
 import { prepareCanvas, palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface BackpropProps {
@@ -11,6 +12,14 @@ interface BackpropProps {
 }
 
 type TargetId = 'sine' | 'step' | 'gaussian' | 'cubic'
+
+function hexToRgba(hex: string, a: number): string {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${a})`
+}
 
 const TARGETS: { id: TargetId; label: string; fn: (x: number) => number }[] = [
   { id: 'sine', label: '正弦 sin(πx)', fn: (x) => Math.sin(Math.PI * x) },
@@ -95,6 +104,7 @@ function trainStep(w: Weights, xs: number[], ys: number[], lr: number): number {
 }
 
 export function Backprop({ props }: { props: BackpropProps }) {
+  useTheme() // re-render so palette() re-reads on theme switch
   // Mirror props into local state so readers can experiment live without
   // persisting; the editor's ConfigPanel drives the saved defaults via props.
   const [hidden, setHidden] = useState(props.hidden)
@@ -215,9 +225,9 @@ export function Backprop({ props }: { props: BackpropProps }) {
 
     // prediction
     const w = weightsRef.current
-    ctx.strokeStyle = '#22d3ee'
+    ctx.strokeStyle = P.accent
     ctx.lineWidth = 2.5
-    ctx.shadowColor = 'rgba(34,211,238,0.5)'
+    ctx.shadowColor = P.glow
     ctx.shadowBlur = 8
     ctx.beginPath()
     for (let i = 0; i < xs.length; i++) {
@@ -263,8 +273,8 @@ export function Backprop({ props }: { props: BackpropProps }) {
     const range = max - min || 1
     // gradient-filled loss curve
     const grad = ctx.createLinearGradient(0, 0, 0, CH)
-    grad.addColorStop(0, 'rgba(34,211,238,0.35)')
-    grad.addColorStop(1, 'rgba(34,211,238,0)')
+    grad.addColorStop(0, P.glow)
+    grad.addColorStop(1, 'transparent')
     ctx.fillStyle = grad
     ctx.beginPath()
     hist.forEach((v, i) => {
@@ -277,7 +287,7 @@ export function Backprop({ props }: { props: BackpropProps }) {
     ctx.lineTo(0, CH)
     ctx.closePath()
     ctx.fill()
-    ctx.strokeStyle = '#22d3ee'
+    ctx.strokeStyle = P.accent
     ctx.lineWidth = 1.5
     ctx.beginPath()
     hist.forEach((v, i) => {
@@ -394,6 +404,8 @@ export function Backprop({ props }: { props: BackpropProps }) {
 }
 
 function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
+  const P = palette()
+  useTheme()
   const W = 320
   const H = 150
   const inX = 30
@@ -405,7 +417,8 @@ function NetworkGraph({ w, maxAbsW }: { w: Weights; maxAbsW: number }) {
 
   const edge = (weight: number, x1: number, y1: number, x2: number, y2: number, key: string) => {
     const norm = Math.abs(weight) / maxAbsW
-    const color = weight >= 0 ? `rgba(34,211,238,${0.25 + norm * 0.7})` : `rgba(251,113,133,${0.25 + norm * 0.7})`
+    const base = weight >= 0 ? P.accent : P.danger
+    const color = hexToRgba(base, 0.25 + norm * 0.7)
     return (
       <line
         key={key}

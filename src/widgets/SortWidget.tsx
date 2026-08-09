@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { WidgetDefinition } from './registry'
+import { palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 
 interface SortProps {
   count: number
@@ -106,6 +108,8 @@ const BAR_AREA = 204 // px reserved for bars (leaves headroom for value labels)
 
 function Sort({ props }: { props: SortProps }) {
   const { count: countProp, algorithm: algoProp, speed: speedProp } = props
+  const P = palette()
+  useTheme() // re-render so palette() re-reads on theme switch
   // Mirror props into local state so readers can switch algorithms / tune size
   // & speed directly; the editor's ConfigPanel still drives the saved default.
   const [algorithm, setAlgorithm] = useState<SortProps['algorithm']>(algoProp)
@@ -188,7 +192,7 @@ function Sort({ props }: { props: SortProps }) {
         </div>
         <span
           className="ml-auto rounded-full px-2.5 py-1 font-mono text-xs"
-          style={{ border: '1px solid var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
+          style={{ border: '1px solid var(--lb-border)', background: 'color-mix(in srgb, var(--lb-accent) 16%, transparent)', color: 'var(--lb-accent-2)' }}
         >
           平均 {activeAlgo.complex}
         </span>
@@ -201,12 +205,12 @@ function Sort({ props }: { props: SortProps }) {
           const isSwap = step.swap?.includes(i)
           const isPivot = step.pivot === i
           const isSorted = step.sorted.includes(i)
-          let bg = '#6366f1'
-          if (isSorted) bg = '#34d399'
-          if (isCompare) bg = '#fbbf24'
-          if (isSwap) bg = '#fb7185'
-          if (isPivot) bg = '#f472b6'
-          if (step.done) bg = '#34d399'
+          let bg = P.accent
+          if (isSorted) bg = P.good
+          if (isCompare) bg = P.warn
+          if (isSwap) bg = P.danger
+          if (isPivot) bg = P.pink
+          if (step.done) bg = P.good
           return (
             <div key={i} className="flex flex-1 flex-col justify-end">
               <div
@@ -220,8 +224,8 @@ function Sort({ props }: { props: SortProps }) {
               >
                 {showLabels && (
                   <span
-                    className="pointer-events-none absolute inset-x-0 top-1 text-center text-[10px] font-bold leading-none tabular-nums text-slate-900"
-                    style={{ textShadow: '0 1px 0 rgba(255,255,255,0.55)' }}
+                    className="pointer-events-none absolute inset-x-0 top-1 text-center text-[10px] font-bold leading-none tabular-nums"
+                    style={{ color: P.text, textShadow: `0 1px 0 ${P.bg}` }}
                   >
                     {v}
                   </span>
@@ -279,10 +283,10 @@ function Sort({ props }: { props: SortProps }) {
         <span>·</span>
         <span className="t-muted tabular-nums">交换 {swaps}</span>
         <span className="ml-auto hidden items-center gap-3 sm:flex">
-          <Legend color="#fbbf24" label="比较" />
-          <Legend color="#fb7185" label="交换" />
-          <Legend color="#f472b6" label="基准" />
-          <Legend color="#34d399" label="已排序" />
+          <Legend color={P.warn} label="比较" />
+          <Legend color={P.danger} label="交换" />
+          <Legend color={P.pink} label="基准" />
+          <Legend color={P.good} label="已排序" />
         </span>
       </div>
     </div>

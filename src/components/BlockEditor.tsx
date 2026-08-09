@@ -18,10 +18,10 @@ export function BlockEditor({ block, index, total, onChange, onDelete, onMove }:
     <div className="group rounded-xl border p-3 shadow-lg" style={{ borderColor: 'var(--lb-border-soft)', background: 'var(--lb-surface-bg)' }}>
       <div className="mb-2 flex items-center gap-1">
         <span
-          className="rounded px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider"
-          style={{ border: '1px solid var(--lb-border)', background: 'rgba(99,102,241,0.1)', color: 'var(--lb-accent-2)' }}
+          className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+          style={{ background: 'var(--lb-panel)', color: 'var(--lb-muted)' }}
         >
-          {block.kind === 'text' ? '文字' : '交互组件'}
+          {block.kind === 'text' ? '文字段落' : '交互组件'}
         </span>
         <div className="ml-auto flex items-center gap-1 opacity-60 transition group-hover:opacity-100">
           <IconBtn label="上移" disabled={index === 0} onClick={() => onMove(-1)}>
@@ -135,7 +135,10 @@ function WidgetEditor({
         {def ? (
           <def.Component props={props} />
         ) : (
-          <div className="rounded-xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-700">
+          <div
+            className="rounded-xl border border-dashed p-6 text-center text-sm"
+            style={{ borderColor: 'rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.08)', color: '#fca5a5' }}
+          >
             未知组件类型：{type}
           </div>
         )}

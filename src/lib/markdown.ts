@@ -60,7 +60,6 @@ function codeCard(lang: string, code: string): string {
   const label = lang || 'text'
   return (
     '<div class="code-card"><div class="code-head">' +
-    '<span class="dots"><i></i><i></i><i></i></span>' +
     `<span class="code-lang">${escapeHtml(label)}</span>` +
     '<button type="button" class="code-copy" data-copy aria-label="复制代码">复制</button>' +
     `</div><pre><code data-lang="${escapeHtml(lang)}">${body}</code></pre></div>`

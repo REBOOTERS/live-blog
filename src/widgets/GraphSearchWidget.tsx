@@ -134,6 +134,7 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
   useEffect(() => setAlgo(props.algorithm), [props.algorithm])
   useEffect(() => setSpeed(props.speed), [props.speed])
   const theme = useTheme()
+  const P = palette()
 
   const [seed, setSeed] = useState(1)
   const [idx, setIdx] = useState(0)
@@ -189,7 +190,6 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
     if (!canvas) return
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
-    const P = palette()
     const frontierSet = new Set(step.frontier)
     const orderMap = new Map<number, number>()
     step.visitedOrder.forEach((id, i) => orderMap.set(id, i))
@@ -210,11 +210,11 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
           const id = roomId(rr, cc)
           if (orderMap.has(id)) {
             const hue = (orderMap.get(id)! / total) * 280 // red→yellow→green→blue
-            ctx.fillStyle = `hsl(${hue}, 72%, 52%)`
+            ctx.fillStyle = `hsl(${hue}, 68%, 56%)`
           } else if (frontierSet.has(id)) {
-            ctx.fillStyle = 'rgba(251,191,36,0.9)'
+            ctx.fillStyle = P.warn
           } else if (step.done && pathSet.has(id)) {
-            ctx.fillStyle = '#f59e0b'
+            ctx.fillStyle = P.warn
           } else {
             ctx.fillStyle = P.bg
           }
@@ -226,8 +226,8 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
     // current cell glow
     if (step.current !== null) {
       const [gx, gy] = roomCenter(step.current)
-      ctx.fillStyle = '#ffffff'
-      ctx.shadowColor = 'rgba(255,255,255,0.9)'
+      ctx.fillStyle = P.accent
+      ctx.shadowColor = P.glow
       ctx.shadowBlur = 16
       ctx.fillRect(gx - CELL / 2 + 3, gy - CELL / 2 + 3, CELL - 6, CELL - 6)
       ctx.shadowBlur = 0
@@ -236,9 +236,9 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
     // start (green) + goal (pink) markers
     const [sx, sy] = roomCenter(START)
     const [gx, gy] = roomCenter(GOAL)
-    ctx.fillStyle = '#34d399'
+    ctx.fillStyle = P.good
     ctx.fillRect(sx - CELL / 2 + 4, sy - CELL / 2 + 4, CELL - 8, CELL - 8)
-    ctx.fillStyle = '#fb7185'
+    ctx.fillStyle = P.pink
     ctx.fillRect(gx - CELL / 2 + 4, gy - CELL / 2 + 4, CELL - 8, CELL - 8)
 
     // start/goal labels
@@ -298,7 +298,7 @@ export function GraphSearch({ props }: { props: GraphSearchProps }) {
                   <span
                     key={`${id}-${i}`}
                     className={`h-3 w-3 rounded-sm ${isNext ? 'ring-2' : ''}`}
-                    style={{ background: isNext ? 'var(--lb-accent)' : '#fbbf24', boxShadow: isNext ? '0 0 0 1px var(--lb-accent)' : undefined }}
+                    style={{ background: isNext ? P.accent : P.warn, boxShadow: isNext ? '0 0 0 1px var(--lb-accent)' : undefined }}
                   />
                 )
               })}

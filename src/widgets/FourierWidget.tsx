@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAnimationFrame } from '../lib/useAnimationFrame'
 import { prepareCanvas, palette } from '../lib/canvas'
+import { useTheme } from '../lib/theme'
 import type { WidgetDefinition } from './registry'
 
 interface FourierProps {
@@ -101,6 +102,7 @@ const PRESETS: { id: Preset; label: string }[] = [
 
 export function Fourier({ props }: { props: FourierProps }) {
   const { showSpectrum } = props
+  useTheme() // re-render so palette() re-reads on theme switch
   // Local copies so readers can tweak without persisting; the editor's
   // ConfigPanel still drives the saved defaults via props.
   const [harmonics, setHarmonics] = useState(props.harmonics)
@@ -236,10 +238,10 @@ export function Fourier({ props }: { props: FourierProps }) {
     drawPath(ctx, sig, xOf, yOf)
     ctx.setLineDash([])
 
-    // reconstruction (bold neon)
-    ctx.strokeStyle = '#22d3ee'
+    // reconstruction (bold)
+    ctx.strokeStyle = P.accent
     ctx.lineWidth = 2.5
-    ctx.shadowColor = 'rgba(34,211,238,0.5)'
+    ctx.shadowColor = P.glow
     ctx.shadowBlur = 8
     drawPath(ctx, recon, xOf, yOf)
     ctx.shadowBlur = 0
@@ -247,7 +249,7 @@ export function Fourier({ props }: { props: FourierProps }) {
     // filled area under reconstruction up to cursor
     const cursorN = phaseRef.current * (N - 1)
     const ci = Math.round(cursorN)
-    ctx.fillStyle = 'rgba(34,211,238,0.1)'
+    ctx.fillStyle = P.soft
     ctx.beginPath()
     ctx.moveTo(xOf(0), mid)
     for (let n = 0; n <= ci; n++) ctx.lineTo(xOf(n), yOf(recon[n]))
@@ -256,13 +258,13 @@ export function Fourier({ props }: { props: FourierProps }) {
     ctx.fill()
 
     // cursor
-    ctx.strokeStyle = '#fb7185'
+    ctx.strokeStyle = P.danger
     ctx.lineWidth = 1.5
     ctx.beginPath()
     ctx.moveTo(xOf(ci), SIG_TOP - 4)
     ctx.lineTo(xOf(ci), SIG_BOT + 4)
     ctx.stroke()
-    ctx.fillStyle = '#fb7185'
+    ctx.fillStyle = P.danger
     ctx.shadowColor = 'rgba(251,113,133,0.8)'
     ctx.shadowBlur = 8
     ctx.beginPath()
@@ -296,9 +298,9 @@ export function Fourier({ props }: { props: FourierProps }) {
       const h = (dft.amp[k] / maxAmp) * (specH - 6)
       const x = PAD_L + k * (barW + gap)
       const used = k <= harmonics
-      ctx.fillStyle = used ? '#6366f1' : P.grid
+      ctx.fillStyle = used ? P.accent2 : P.grid
       if (used) {
-        ctx.shadowColor = 'rgba(99,102,241,0.5)'
+        ctx.shadowColor = P.glow2
         ctx.shadowBlur = 6
       }
       ctx.fillRect(x, SPEC_BOT - h, barW, h)

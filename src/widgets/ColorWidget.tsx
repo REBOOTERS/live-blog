@@ -62,10 +62,13 @@ export function ColorMix({ props }: { props: ColorProps }) {
     const ctx = prepareCanvas(canvas, W, H)
     if (!ctx) return
 
-    // background
+    // The canvas background is dictated by the color-mixing *physics*, not the
+    // page theme: additive (light) needs a dark "darkroom" so the glowing beams
+    // read; subtractive (pigment) needs a white "paper" so CMY inks darken.
+    const dark = mode === 'additive'
     const bg = ctx.createLinearGradient(0, 0, 0, H)
-    bg.addColorStop(0, '#0a0f1e')
-    bg.addColorStop(1, '#070b16')
+    bg.addColorStop(0, dark ? '#0a0f1e' : '#ffffff')
+    bg.addColorStop(1, dark ? '#070b16' : '#f5f5f7')
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
 
@@ -82,16 +85,9 @@ export function ColorMix({ props }: { props: ColorProps }) {
       drawBlob(ctx, C.b, `rgba(50,120,255,${b / 255})`)
     } else {
       // subtractive: CMY pigments. Map RGB sliders to C/M/Y ink amounts.
-      ctx.globalCompositeOperation = 'multiply'
       const cInk = 1 - r / 255
       const mInk = 1 - g / 255
       const yInk = 1 - b / 255
-      // draw on white so multiply has a base
-      ctx.globalCompositeOperation = 'source-over'
-      ctx.fillStyle = '#ffffff'
-      ctx.beginPath()
-      ctx.arc(W / 2, H / 2, R * 1.9, 0, Math.PI * 2)
-      ctx.fill()
       ctx.globalCompositeOperation = 'multiply'
       drawBlob(ctx, C.r, `rgba(0,255,255,${cInk})`)
       drawBlob(ctx, C.g, `rgba(255,0,255,${mInk})`)
@@ -99,11 +95,11 @@ export function ColorMix({ props }: { props: ColorProps }) {
     }
     ctx.restore()
 
-    // labels on each circle
+    // labels on each circle (contrast against the mode's background)
     ctx.globalCompositeOperation = 'source-over'
     ctx.font = '600 12px ui-monospace, monospace'
     ctx.textAlign = 'center'
-    ctx.fillStyle = 'rgba(255,255,255,0.85)'
+    ctx.fillStyle = dark ? 'rgba(255,255,255,0.85)' : 'rgba(29,29,31,0.75)'
     ctx.fillText(mode === 'additive' ? `R ${r}` : `C ${255 - r}`, C.r.x, C.r.y + 4)
     ctx.fillText(mode === 'additive' ? `G ${g}` : `M ${255 - g}`, C.g.x, C.g.y + 4)
     ctx.fillText(mode === 'additive' ? `B ${b}` : `Y ${255 - b}`, C.b.x, C.b.y + 4)

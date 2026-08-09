@@ -4,7 +4,18 @@ export type Theme = 'dark' | 'light'
 
 const KEY = 'liveblog:theme'
 
-let current: Theme = (typeof localStorage !== 'undefined' && (localStorage.getItem(KEY) as Theme)) || 'dark'
+function getInitialTheme(): Theme {
+  if (typeof localStorage !== 'undefined') {
+    const saved = localStorage.getItem(KEY) as Theme | null
+    if (saved === 'dark' || saved === 'light') return saved
+  }
+  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
+  }
+  return 'light'
+}
+
+let current: Theme = getInitialTheme()
 const listeners = new Set<() => void>()
 
 export function getTheme(): Theme {

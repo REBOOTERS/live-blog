@@ -54,6 +54,15 @@ export interface CanvasPalette {
   muted: string
   faint: string
   ghost: string // faint reference data line
+  accent: string // primary curve / moving element
+  accent2: string // secondary curve / gradient end
+  soft: string // primary at low alpha: fills, trails
+  glow: string // primary shadow color (already alpha'd; subtle on light)
+  glow2: string
+  warn: string
+  danger: string
+  good: string
+  pink: string
 }
 
 export function palette(): CanvasPalette {
@@ -61,14 +70,23 @@ export function palette(): CanvasPalette {
     typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light'
   return light
     ? {
-        bg: '#f8fafc',
-        bg2: '#eef2f7',
-        grid: 'rgba(100,116,139,0.12)',
-        axis: 'rgba(99,102,241,0.35)',
-        text: '#334155',
-        muted: '#64748b',
-        faint: '#94a3b8',
+        bg: '#ffffff',
+        bg2: '#f1f5f9',
+        grid: 'rgba(15,23,42,0.07)',
+        axis: 'rgba(0,113,227,0.35)',
+        text: '#1d1d1f',
+        muted: '#6e6e73',
+        faint: '#86868b',
         ghost: 'rgba(100,116,139,0.5)',
+        accent: '#0071e3',
+        accent2: '#5856d6',
+        soft: 'rgba(0,113,227,0.12)',
+        glow: 'rgba(0,113,227,0.28)',
+        glow2: 'rgba(88,86,214,0.28)',
+        warn: '#d97706',
+        danger: '#e11d48',
+        good: '#059669',
+        pink: '#db2777',
       }
     : {
         bg: '#0a0f1e',
@@ -79,5 +97,14 @@ export function palette(): CanvasPalette {
         muted: '#94a3b8',
         faint: '#64748b',
         ghost: 'rgba(148,163,184,0.6)',
+        accent: '#22d3ee',
+        accent2: '#818cf8',
+        soft: 'rgba(34,211,238,0.14)',
+        glow: 'rgba(34,211,238,0.5)',
+        glow2: 'rgba(99,102,241,0.55)',
+        warn: '#fbbf24',
+        danger: '#fb7185',
+        good: '#34d399',
+        pink: '#f472b6',
       }
 }

@@ -8,6 +8,14 @@ interface TransformerProps {
   usePosition: boolean
 }
 
+function hexToRgba(hex: string, a: number): string {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${a})`
+}
+
 // ---- Hand-crafted semantic feature space (8 dims) -------------------
 // 0: entity  1: action  2: state  3: animate  4: function  5: determiner  6: tense  7: food
 type Vec = number[]
@@ -90,6 +98,7 @@ const SENTENCES: { id: number; text: string; tokens: string[]; note: string }[] 
 
 export function SelfAttention({ props }: { props: TransformerProps }) {
   useTheme() // re-render on theme change so child SVGs re-read palette()
+  const P = palette()
   const [sentenceId, setSentenceId] = useState(props.sentenceId)
   const [usePos, setUsePos] = useState(props.usePosition)
   const [head, setHead] = useState(0)
@@ -149,7 +158,7 @@ export function SelfAttention({ props }: { props: TransformerProps }) {
         weights={weights}
         query={clampQuery}
         onPick={(i) => setQuery(i)}
-        headColor={['#22d3ee', '#a5b4fc', '#34d399'][head]}
+        headColor={[P.accent, P.accent2, P.good][head]}
       />
 
       {/* head selector */}
@@ -292,6 +301,8 @@ function AttentionMatrix({
   query: number
   tokens: string[]
 }) {
+  const P = palette()
+  useTheme()
   const cell = 26
   const label = 34
   const W = label + tokens.length * cell
@@ -303,8 +314,8 @@ function AttentionMatrix({
           const t = Math.min(1, v / 0.6)
           const fill =
             i === query
-              ? `rgba(34,211,238,${0.12 + t * 0.85})`
-              : `rgba(129,140,248,${0.06 + t * 0.5})`
+              ? hexToRgba(P.accent, 0.12 + t * 0.85)
+              : hexToRgba(P.accent2, 0.06 + t * 0.5)
           return (
             <g key={`${i}-${j}`}>
               <rect
@@ -321,7 +332,7 @@ function AttentionMatrix({
                 textAnchor="middle"
                 fontSize={8}
                 fontFamily="ui-monospace, monospace"
-                fill={t > 0.4 ? '#0a0f1e' : '#64748b'}
+                fill={t > 0.4 ? P.bg : P.faint}
               >
                 {(v * 100).toFixed(0)}
               </text>
@@ -337,7 +348,7 @@ function AttentionMatrix({
           y={label - 6}
           textAnchor="middle"
           fontSize={10}
-          fill="#64748b"
+          fill={P.faint}
         >
           {tk}
         </text>
@@ -350,7 +361,7 @@ function AttentionMatrix({
           y={label + i * cell + (cell - 2) / 2 + 3}
           textAnchor="end"
           fontSize={10}
-          fill={i === query ? '#22d3ee' : '#64748b'}
+          fill={i === query ? P.accent : P.faint}
           fontWeight={i === query ? 700 : 400}
         >
           {tk}
