@@ -6,9 +6,10 @@
    .t-* classes or var(--lb-*) so they adapt automatically.
 
    Design language: restraint. One accent, hairline borders,
-   soft shadows, generous whitespace, a serif display face for
-   article titles. Widget "figures" stay a dark plate in both
-   themes so the interactive canvases read as exhibits.
+   soft shadows, generous whitespace. Typography is fully
+   sans-serif and unified (SF Pro / PingFang); hierarchy comes
+   from size + weight + tracking, never from a serif face, so
+   CJK + Latin + numerals stay coherent.
    ============================================================ */
 :root {
   --lb-bg-1: #fbfbfd;
@@ -52,8 +53,8 @@
   --lb-code-head: linear-gradient(180deg, #11151e, #0d1017);
   --lb-code-border: rgba(255, 255, 255, 0.08);
 
-  --lb-font-display: ui-serif, Georgia, "Times New Roman", "Songti SC",
-    "Source Han Serif SC", "Noto Serif CJK SC", "STSong", serif;
+  --lb-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 [data-theme='dark'] {
