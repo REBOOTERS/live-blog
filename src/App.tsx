@@ -11,7 +11,7 @@ type Mode = 'read' | 'edit'
 
 export default function App() {
   const [articles, setArticles] = useState<Article[]>(() => loadArticles())
-  const [currentId, setCurrentId] = useState<string>(() => loadArticles()[0].id)
+  const [currentId, setCurrentId] = useState<string>('')
   const [mode, setMode] = useState<Mode>('read')
   const [draft, setDraft] = useState<Article | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -28,22 +28,35 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [sidebarOpen])
 
-  const current = useMemo(
-    () => articles.find((a) => a.id === currentId) ?? articles[0],
-    [articles, currentId],
+  // sort by publication date, newest first; id is a stable tiebreaker
+  const sorted = useMemo(
+    () =>
+      [...articles].sort(
+        (a, b) =>
+          (b.publishedAt || b.updatedAt).localeCompare(a.publishedAt || a.updatedAt) ||
+          a.id.localeCompare(b.id),
+      ),
+    [articles],
   )
+
+  const currentIndex = Math.max(0, sorted.findIndex((a) => a.id === currentId))
+  const current = sorted[currentIndex]
+  // older = published earlier (one row down in the desc-sorted list)
+  const older = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : undefined
+  // newer = published later (one row up)
+  const newer = currentIndex > 0 ? sorted[currentIndex - 1] : undefined
 
   // sidebar search: match title / description / text-block content
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return articles
-    return articles.filter(
+    if (!q) return sorted
+    return sorted.filter(
       (a) =>
         a.title.toLowerCase().includes(q) ||
         a.description.toLowerCase().includes(q) ||
         a.blocks.some((b) => b.kind === 'text' && b.content.toLowerCase().includes(q)),
     )
-  }, [articles, query])
+  }, [sorted, query])
 
   // sync draft when switching into edit mode / changing article
   useEffect(() => {
@@ -64,6 +77,7 @@ export default function App() {
       id: uid('art'),
       title: '无标题文章',
       description: '',
+      publishedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       blocks: [
         { id: uid('blk'), kind: 'text', content: '## 开始写作\n\n在这里写下你的内容……' },
@@ -76,9 +90,8 @@ export default function App() {
 
   const removeArticle = (id: string) => {
     if (!confirm('确定删除这篇文章吗？')) return
-    const next = deleteArticle(id)
-    setArticles(next)
-    setCurrentId(next[0].id)
+    setArticles(deleteArticle(id))
+    if (currentId === id) setCurrentId('')
     setMode('read')
   }
 
@@ -103,6 +116,12 @@ export default function App() {
         ? { id: uid('blk'), kind: 'text', content: '' }
         : { id: uid('blk'), kind: 'widget', type: type!, props: { ...getWidget(type!)!.defaultProps } }
     setDraft((d) => (d ? { ...d, blocks: [...d.blocks, block] } : d))
+  }
+
+  const navigate = (id: string) => {
+    setCurrentId(id)
+    setMode('read')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -182,7 +201,7 @@ export default function App() {
         style={{ maxWidth: mode === 'edit' ? '50rem' : '42rem' }}
       >
         {mode === 'read' ? (
-          <ReadView article={current} />
+          <ReadView article={current} older={older} newer={newer} onNavigate={navigate} />
         ) : draft ? (
           <EditView
             draft={draft}
@@ -285,7 +304,7 @@ export default function App() {
                     {a.title || '无标题'}
                   </div>
                   <div className="t-faint mt-1 flex items-center gap-2 text-[11.5px]">
-                    <span>{new Date(a.updatedAt).toLocaleDateString()}</span>
+                    <span>{new Date(a.publishedAt || a.updatedAt).toLocaleDateString()}</span>
                     <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
                     <span>{readingTime(a)} 分钟阅读</span>
                     <button
@@ -329,7 +348,17 @@ function readingTime(a: Article): number {
   return Math.max(1, Math.round(cjk / 400 + words / 250))
 }
 
-function ReadView({ article }: { article: Article }) {
+function ReadView({
+  article,
+  older,
+  newer,
+  onNavigate,
+}: {
+  article: Article
+  older?: Article
+  newer?: Article
+  onNavigate: (id: string) => void
+}) {
   const hasWidget = article.blocks.some((b) => b.kind === 'widget')
   return (
     <article>
@@ -337,7 +366,7 @@ function ReadView({ article }: { article: Article }) {
         {hasWidget ? '交互式文章' : '文章'}
       </div>
       <h1
-        className="t-heading text-[2.1rem] font-semibold leading-[1.12] tracking-[-0.022em] sm:text-[2.75rem] md:text-[3.1rem]"
+        className="t-heading text-[1.875rem] font-semibold leading-[1.15] tracking-[-0.022em] sm:text-[2.125rem] md:text-[2.25rem]"
         style={{ fontFamily: 'var(--lb-font-display)' }}
       >
         {article.title}
@@ -348,7 +377,7 @@ function ReadView({ article }: { article: Article }) {
         </p>
       )}
       <div className="t-faint mt-6 flex flex-wrap items-center gap-x-3 text-[13px]">
-        <span className="t-muted">{new Date(article.updatedAt).toLocaleDateString()}</span>
+        <span className="t-muted">{new Date(article.publishedAt || article.updatedAt).toLocaleDateString()}</span>
         <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
         <span>{article.blocks.length} 个段落</span>
         <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
@@ -360,6 +389,42 @@ function ReadView({ article }: { article: Article }) {
           <BlockRenderer key={b.id} block={b} />
         ))}
       </div>
+
+      {(older || newer) && (
+        <nav
+          className="mt-14 grid grid-cols-1 gap-3 border-t pt-8 sm:grid-cols-2"
+          style={{ borderColor: 'var(--lb-border-soft)' }}
+        >
+          {older ? (
+            <button
+              onClick={() => onNavigate(older.id)}
+              className="group flex flex-col items-start gap-1 rounded-2xl border p-4 text-left transition-colors hover:bg-[var(--lb-hover)]"
+              style={{ borderColor: 'var(--lb-border-soft)' }}
+            >
+              <span className="t-faint text-xs">← 上一篇</span>
+              <span className="t-strong line-clamp-1 text-sm font-medium">
+                {older.title || '无标题'}
+              </span>
+            </button>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
+          {newer ? (
+            <button
+              onClick={() => onNavigate(newer.id)}
+              className="group flex flex-col items-end gap-1 rounded-2xl border p-4 text-right transition-colors hover:bg-[var(--lb-hover)]"
+              style={{ borderColor: 'var(--lb-border-soft)' }}
+            >
+              <span className="t-faint text-xs">下一篇 →</span>
+              <span className="t-strong line-clamp-1 text-sm font-medium">
+                {newer.title || '无标题'}
+              </span>
+            </button>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
+        </nav>
+      )}
     </article>
   )
 }
@@ -388,7 +453,7 @@ function EditView({
         value={draft.title}
         onChange={(e) => onChange({ ...draft, title: e.target.value })}
         placeholder="文章标题"
-        className="t-heading w-full bg-transparent text-[2.1rem] font-semibold leading-[1.12] tracking-[-0.022em] outline-none placeholder:text-[var(--lb-faint)] sm:text-[2.4rem]"
+        className="t-heading w-full bg-transparent text-[1.875rem] font-semibold leading-[1.15] tracking-[-0.022em] outline-none placeholder:text-[var(--lb-faint)] sm:text-[2.125rem]"
         style={{ fontFamily: 'var(--lb-font-display)' }}
       />
       <input

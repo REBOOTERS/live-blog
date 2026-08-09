@@ -13,7 +13,9 @@ export interface Article {
   id: string
   title: string
   description: string
-  /** ISO timestamp */
+  /** ISO timestamp — stable publication date, used as the sort key */
+  publishedAt: string
+  /** ISO timestamp — last edit, refreshed on every save */
   updatedAt: string
   blocks: Block[]
 }

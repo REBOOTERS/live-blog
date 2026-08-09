@@ -1,8 +1,8 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v6'
-const LEGACY_KEY = 'liveblog:articles:v5'
+const KEY = 'liveblog:articles:v7'
+const LEGACY_KEY = 'liveblog:articles:v6'
 
 export function loadArticles(): Article[] {
   try {
@@ -11,7 +11,7 @@ export function loadArticles(): Article[] {
       const parsed = JSON.parse(raw) as Article[]
       if (Array.isArray(parsed) && parsed.length) return parsed
     }
-    // First launch on v3 (or v3 empty/corrupt): migrate any v2 data, then seed.
+    // First launch on v7 (or v7 empty/corrupt): migrate any v6 data, then seed.
     return migrate()
   } catch {
     return seedArticles()
@@ -19,12 +19,11 @@ export function loadArticles(): Article[] {
 }
 
 /**
- * v5 → v6 migration. The built-in demo articles (stable ids art-*) carry text
- * and default props that must match the current widget code — when that code
- * changes (e.g. the projectile interaction), the stored copies go stale and the
- * article instructions no longer match the widget. This refreshes those demo
- * articles from the latest seed while preserving any user-created articles and
- * their ordering.
+ * v6 → v7 migration. Introduces the stable `publishedAt` field (the sort key).
+ * Built-in demo articles (stable ids art-*) are refreshed from the latest seed,
+ * which carries fixed RELEASE_DATES; user-created articles keep their place by
+ * adopting their existing `updatedAt` as `publishedAt` (best-effort). Also
+ * keeps prior behavior: demo text/props are refreshed, user articles preserved.
  */
 function migrate(): Article[] {
   const seed = seedArticles()
@@ -53,7 +52,8 @@ function migrate(): Article[] {
       refreshed.add(a.id)
       return fresh
     }
-    return a
+    // user-created article: backfill publishedAt from its existing timestamp
+    return { ...a, publishedAt: a.publishedAt ?? a.updatedAt }
   })
   // Append any demo article that wasn't present before.
   for (const s of seed) {

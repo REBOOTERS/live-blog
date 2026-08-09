@@ -3,10 +3,28 @@ import { uid } from './lib/id'
 
 const now = () => new Date().toISOString()
 
+// Stable publication dates for the built-in demo articles. These are fixed
+// constants (not now()) so the publish order is deterministic and survives
+// storage migrations — they define the "real" release timeline shown to the
+// reader. Newest is the last entry; the article list is sorted by these desc.
+const RELEASE_DATES: Record<string, string> = {
+  'art-pendulum': '2026-07-08T09:00:00.000Z',
+  'art-bezier': '2026-07-10T09:00:00.000Z',
+  'art-sort': '2026-07-12T09:00:00.000Z',
+  'art-projectile': '2026-07-14T09:00:00.000Z',
+  'art-fourier': '2026-07-16T09:00:00.000Z',
+  'art-matrix': '2026-07-18T09:00:00.000Z',
+  'art-backprop': '2026-07-20T09:00:00.000Z',
+  'art-color': '2026-07-22T09:00:00.000Z',
+  'art-sound': '2026-07-24T09:00:00.000Z',
+  'art-transformer': '2026-07-26T09:00:00.000Z',
+  'art-graph-search': '2026-07-28T09:00:00.000Z',
+}
+
 // Each knowledge point is its own article. New articles should follow the same
 // shape: ordered blocks of text/widget, with text framing the interaction.
 
-function pendulumArticle(): Article {
+function pendulumArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-pendulum',
     title: '单摆：从周期到能量守恒',
@@ -41,7 +59,7 @@ function pendulumArticle(): Article {
   }
 }
 
-function bezierArticle(): Article {
+function bezierArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-bezier',
     title: '贝塞尔曲线：钢笔工具背后的数学',
@@ -82,7 +100,7 @@ function bezierArticle(): Article {
   }
 }
 
-function sortArticle(): Article {
+function sortArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-sort',
     title: '看见复杂度：四种排序算法',
@@ -115,7 +133,7 @@ function sortArticle(): Article {
   }
 }
 
-function projectileArticle(): Article {
+function projectileArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-projectile',
     title: '抛体运动：弹道与速度分解',
@@ -149,7 +167,7 @@ function projectileArticle(): Article {
   }
 }
 
-function fourierArticle(): Article {
+function fourierArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-fourier',
     title: '傅里叶变换：把任意信号拆成正弦波',
@@ -196,7 +214,7 @@ function fourierArticle(): Article {
   }
 }
 
-function matrixArticle(): Article {
+function matrixArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-matrix',
     title: '矩阵变换：矩阵是对空间的操作',
@@ -237,7 +255,7 @@ function matrixArticle(): Article {
   }
 }
 
-function backpropArticle(): Article {
+function backpropArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-backprop',
     title: '反向传播：神经网络是怎样学习的',
@@ -290,7 +308,7 @@ function backpropArticle(): Article {
   }
 }
 
-function colorArticle(): Article {
+function colorArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-color',
     title: '三原色：屏幕如何「骗」你的眼睛看到所有颜色',
@@ -331,7 +349,7 @@ function colorArticle(): Article {
   }
 }
 
-function soundArticle(): Article {
+function soundArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-sound',
     title: '声波与频率：声音到底是什么',
@@ -372,7 +390,7 @@ function soundArticle(): Article {
   }
 }
 
-function transformerArticle(): Article {
+function transformerArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-transformer',
     title: 'Transformer：让 AI 学会「读懂上下文」的注意力机制',
@@ -419,7 +437,7 @@ function transformerArticle(): Article {
   }
 }
 
-function graphSearchArticle(): Article {
+function graphSearchArticle(): Omit<Article, 'publishedAt'> {
   return {
     id: 'art-graph-search',
     title: '广度优先与深度优先：两种遍历图的姿势',
@@ -486,5 +504,5 @@ export function seedArticles(): Article[] {
     soundArticle(),
     transformerArticle(),
     graphSearchArticle(),
-  ]
+  ].map((a) => ({ ...a, publishedAt: RELEASE_DATES[a.id] ?? a.updatedAt }))
 }
