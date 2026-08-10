@@ -10,6 +10,8 @@ import { ColorWidget } from './ColorWidget'
 import { SoundWaveWidget } from './SoundWaveWidget'
 import { TransformerWidget } from './TransformerWidget'
 import { GraphSearchWidget } from './GraphSearchWidget'
+import { TokenizerWidget } from './TokenizerWidget'
+import { TokenBudgetWidget } from './TokenBudgetWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -53,6 +55,8 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'sound-wave': SoundWaveWidget,
   transformer: TransformerWidget,
   'graph-search': GraphSearchWidget,
+  tokenizer: TokenizerWidget,
+  'token-budget': TokenBudgetWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {

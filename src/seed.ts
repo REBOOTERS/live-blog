@@ -19,6 +19,7 @@ const RELEASE_DATES: Record<string, string> = {
   'art-sound': '2026-07-24T09:00:00.000Z',
   'art-transformer': '2026-07-26T09:00:00.000Z',
   'art-graph-search': '2026-07-28T09:00:00.000Z',
+  'art-tokens': '2026-08-10T09:00:00.000Z',
 }
 
 // Each knowledge point is its own article. New articles should follow the same
@@ -490,6 +491,53 @@ function graphSearchArticle(): Omit<Article, 'publishedAt'> {
   }
 }
 
+function tokenArticle(): Omit<Article, 'publishedAt'> {
+  return {
+    id: 'art-tokens',
+    title: '大模型的 Token：文字如何被计价',
+    description: '亲手切分文本看清 token 的构成，并按上下文窗口实时估算消耗与费用。',
+    updatedAt: now(),
+    blocks: [
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 模型不识字，只认 token\n\n当你把一段话发给大模型时，它读到的并不是「字」或「词」，而是一串数字——每个数字对应一个 **token**。Token 是模型看待文本的最小单位，也是计费的依据：输入多少 token、输出多少 token，直接决定一次请求的花费。\n\n那一个 token 到底是什么？它既不是单个字符，也不一定是一个完整的词，而是介于两者之间的「**子词片段**」。常见的短词（如 `the`、`你好`）本身就是一个 token；长词或生僻词会被拆成若干片段，比如 `tokenization` 常被切成 `token` + `ization`。标点、空格、换行也各自占用 token。\n\n下面的演示用一套近似 BPE（字节对编码）的规则实时切分你输入的文本，蓝、紫、粉分别代表整词、词干和后缀。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'widget',
+        type: 'tokenizer',
+        props: { mode: 'o200k' },
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 字符 ≠ token：密度差异有多大\n\n不同语言折合成 token 的效率差别巨大，这也是估算成本时最容易踩的坑：\n\n| 文本类型 | 大致换算 | 1000 字符 ≈ |\n|---|---|---|\n| 英文 | 约 4 字符 / token | 250 token |\n| 代码 | 约 3.5 字符 / token | 285 token |\n| 中英混合 | 约 2.5 字符 / token | 400 token |\n| 中文 | 约 1.5 字符 / token | 650 token |\n\n中文之所以更「贵」，是因为早期分词器（如 GPT-4 的 `cl100k_base`）对汉字的编码不够紧凑，一个字常需要 1～2 个 token；新版 `o200k_base`（GPT-4o）对此做了优化。在上面的演示里切换分词器，你会看到部分汉字的 token 数从 2 降到 1。\n\n所以「字符数 ÷ 一个固定系数」只能粗估，想要精确数字应当用对应模型的官方分词器（如 OpenAI 的 `tiktoken`）：\n\n```python\nimport tiktoken\nenc = tiktoken.encoding_for_model("gpt-4o")\nprint(len(enc.encode("你好，世界")))  # 精确 token 数\n```\n\n注意空格通常会附着在它后面的词上（` hello` 是一个 token），所以「去掉空格能省钱」基本是错觉。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 一次请求的 token 花在哪\n\n一次对话请求消耗的 token 不只「你刚发的那句话」，而是以下几块之和：\n\n- **系统提示词（system prompt）**：设定角色、规则、工具说明，每条请求都会原样发送。\n- **历史对话（messages）**：多轮对话里，之前的每一问一答都会被重新发给模型——轮数越多，输入越大。\n- **检索/上下文（RAG）**：从文档库检索出的片段、附带的资料。\n- **当前用户输入**：这一轮你真正发的新消息。\n- **模型输出（completion）**：模型生成的回复，按实际产出 token 计费，且和输入**共享同一个上下文窗口**。\n\n关键点在于：**输入和输出都要占满同一个上下文窗口**。如果 128K 的窗口里输入已经占了 125K，模型最多只能再输出 3K 就会被截断。',
+      },
+      {
+        id: uid('blk'),
+        kind: 'widget',
+        type: 'token-budget',
+        props: { window: 128000, priceIn: 3, priceOut: 15 },
+      },
+      {
+        id: uid('blk'),
+        kind: 'text',
+        content:
+          '## 动手估算\n\n在上面的工具里调节各项参数，观察堆叠条如何变化：\n\n- 把「历史对话轮数」从 0 拉到 20，你会看到紫色部分迅速膨胀——这就是长对话越来越贵、越来越容易触发截断的原因。\n- 切换语言（中文 / 英文），同样的字符数折算出的 token 明显不同。\n- 切换上下文窗口（8K / 32K / 128K / 1M），看同样的负载在小窗口下如何直接超限。\n- 费用按「输入单价 × 输入量 + 输出单价 × 输出量」分别计算，输出通常比输入贵 3～5 倍。\n\n几条实用经验：\n\n1. **为输出预留空间**。不要让输入逼近窗口上限，至少留出预期输出长度（如 1～2K token），否则回复会被中途截断。\n2. **历史是隐形的大头**。多轮对话每轮都要重发全部历史，长对话应主动摘要或裁剪早期消息。\n3. **RAG 片段要精选**。塞入的检索内容越多越贵，且无关内容还会拉低回答质量。\n4. **80% 是警戒线**。超过约 80% 窗口后，模型对早期内容的注意力会下降，估算费用时也应留足余量。\n5. **中文场景注意分词器版本**。处理大量中文文本时，选用对中文更友好的新分词器能显著降低 token 消耗。\n\n一个简单的心法：**先用「字符 ÷ 系数」粗估数量级，再用官方分词器对关键样本精算，最后按上下文窗口反推能塞多少内容。** 这样无论是控制成本还是避免截断，都能做到心中有数。',
+      },
+    ],
+  }
+}
+
 /** Returns the initial set of articles shown on first launch / empty storage. */
 export function seedArticles(): Article[] {
   return [
@@ -504,5 +552,6 @@ export function seedArticles(): Article[] {
     soundArticle(),
     transformerArticle(),
     graphSearchArticle(),
+    tokenArticle(),
   ].map((a) => ({ ...a, publishedAt: RELEASE_DATES[a.id] ?? a.updatedAt }))
 }

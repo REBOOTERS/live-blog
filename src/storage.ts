@@ -1,8 +1,8 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v7'
-const LEGACY_KEY = 'liveblog:articles:v6'
+const KEY = 'liveblog:articles:v8'
+const LEGACY_KEY = 'liveblog:articles:v7'
 
 export function loadArticles(): Article[] {
   try {
@@ -11,7 +11,7 @@ export function loadArticles(): Article[] {
       const parsed = JSON.parse(raw) as Article[]
       if (Array.isArray(parsed) && parsed.length) return parsed
     }
-    // First launch on v7 (or v7 empty/corrupt): migrate any v6 data, then seed.
+    // First launch on v8 (or v8 empty/corrupt): migrate any v7 data, then seed.
     return migrate()
   } catch {
     return seedArticles()
@@ -19,11 +19,10 @@ export function loadArticles(): Article[] {
 }
 
 /**
- * v6 → v7 migration. Introduces the stable `publishedAt` field (the sort key).
- * Built-in demo articles (stable ids art-*) are refreshed from the latest seed,
- * which carries fixed RELEASE_DATES; user-created articles keep their place by
- * adopting their existing `updatedAt` as `publishedAt` (best-effort). Also
- * keeps prior behavior: demo text/props are refreshed, user articles preserved.
+ * v7 → v8 migration. Refreshes built-in demo articles from the latest seed
+ * (picking up the new art-tokens article and any text/prop updates) while
+ * preserving user-created articles. User articles backfill publishedAt from
+ * their existing timestamp if missing.
  */
 function migrate(): Article[] {
   const seed = seedArticles()
