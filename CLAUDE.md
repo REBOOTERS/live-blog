@@ -68,7 +68,10 @@ live-blog/
         ├── TransformerWidget.tsx   # Transformer 自注意力（SVG，真实 scaled dot-product）
         ├── GraphSearchWidget.tsx   # BFS/DFS 迷宫遍历（Canvas，彩虹顺序上色 + 前沿 + 最短路径）
         ├── TokenizerWidget.tsx     # 分词可视化（DOM，近似 BPE 切词 + o200k/cl100k 对比）
-        └── TokenBudgetWidget.tsx   # Token 预算估算（DOM，上下文窗口堆叠条 + 费用估算）
+        ├── TokenBudgetWidget.tsx   # Token 预算估算（DOM，上下文窗口堆叠条 + 费用估算）
+        ├── AirfoilWidget.tsx       # 翼型升力与失速（Canvas，绕流粒子 + Cl-α 曲线 + 压力分布）
+        ├── RocketLaunchWidget.tsx  # 火箭发射分级（Canvas，真实积分 + 理想/重力/阻力 Δv）
+        └── BoosterLandingWidget.tsx# 助推器回收着陆（Canvas，hover-slam 制动点 + 手动/自动点火）
 ```
 
 ## 数据模型
@@ -90,7 +93,7 @@ interface Article {
 }
 ```
 
-- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v8`；修改数据结构或 seed 内容时记得升版本号并把上一版 key 作为 `LEGACY_KEY`。迁移会非破坏性地把内置 demo 文章刷新为最新 seed、追加新 demo、并保留用户自建文章。v7 迁移新增 `publishedAt`：内置 demo 用 seed 里的固定发布日期，用户自建文章回填其 `updatedAt`；v8 迁移仅刷新 seed、追加新 demo）。
+- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v10`；修改数据结构或 seed 内容时记得升版本号并把上一版 key 作为 `LEGACY_KEY`。迁移会非破坏性地把内置 demo 文章刷新为最新 seed、追加新 demo、并保留用户自建文章。v7 迁移新增 `publishedAt`：内置 demo 用 seed 里的固定发布日期，用户自建文章回填其 `updatedAt`；其后 v8/v9/v10 迁移仅刷新 seed、追加新 demo）。
 - `Block.id` 由 `src/lib/id.ts` 的 `uid(prefix)` 生成；示例文章使用稳定 id（`art-pendulum` 等）。
 - 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回十一篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体 / 傅里叶 / 矩阵 / 反向传播 / 三原色混色 / 声波 / Transformer / BFS-DFS，每个知识点一篇）。
 
@@ -174,7 +177,7 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 - **2026-08-09 视觉改版为高级博客风**：默认改为浅色编辑型主题（Apple 官网风），夜间模式仍在（顶栏右上角切换；无手动选择时跟随系统 `prefers-color-scheme`，见 `index.html` 预涂脚本与 `src/lib/theme.ts`）。去掉了霓虹辉光/网格底纹/渐变分隔线/发光徽章；主色统一为单一蓝；文章标题用衬线字体；圆角更大（胶囊按钮、12–16px 卡片）。**关键：`.lb-surface` 与全部 11 个 Widget 画布都跟随主题**——`palette()`（`src/lib/canvas.ts`）按 `data-theme` 返回浅/深两套语义色，所有 Widget 经 `useTheme()` 在切主题时重绘；硬编码的青/靛深色值已全部替换为 `palette()` 取值（唯一例外是 ColorWidget 混色画布，其背景由加/减色物理模式决定）。代码块仍保留深色窗口栏（但去掉了红黄绿圆点）。新增 UI 请遵循上面的「整体为浅色编辑型高级博客主题」「画布配色约定」两条。
 
 - 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵/三原色）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
-- 内置示例共十二篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历、大模型 Token 计算。localStorage key 已升至 `v8`，迁移逻辑见 `storage.ts`。内置 demo 各有一个固定发布日期（`seed.ts` 的 `RELEASE_DATES`），文章列表按 `publishedAt` 倒序排列。
+- 内置示例共十三篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历、大模型 Token 计算、空气动力学（翼型升力/火箭发射/助推器回收三个 Widget）。localStorage key 已升至 `v10`，迁移逻辑见 `storage.ts`。内置 demo 各有一个固定发布日期（`seed.ts` 的 `RELEASE_DATES`），文章列表按 `publishedAt` 倒序排列。
 - **2026-08-05 视觉改版**：整体改为深色霓虹科技主题（indigo→cyan 渐变主色、辉光、网格底纹、`.lb-surface` 卡片），全部 Widget 画布重绘为深色高对比配色并加发光；range 控件自定义霓虹滑块。数学公式用 KaTeX、代码块有语法高亮。新增 Widget 时请遵循上面的「画布配色约定」。
 - **2026-08-05 清晰度/交互修复**：① 所有 Canvas Widget 改用 `prepareCanvas` 解决文字模糊（见上「指针/交互约定」）；② 修复 MatrixWidget 的 `viewBox` 尺度不匹配导致图形缩成中心一点、无法交互的问题。
 

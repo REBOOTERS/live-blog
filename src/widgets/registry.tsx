@@ -12,6 +12,9 @@ import { TransformerWidget } from './TransformerWidget'
 import { GraphSearchWidget } from './GraphSearchWidget'
 import { TokenizerWidget } from './TokenizerWidget'
 import { TokenBudgetWidget } from './TokenBudgetWidget'
+import { AirfoilWidget } from './AirfoilWidget'
+import { RocketLaunchWidget } from './RocketLaunchWidget'
+import { BoosterLandingWidget } from './BoosterLandingWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -57,6 +60,9 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'graph-search': GraphSearchWidget,
   tokenizer: TokenizerWidget,
   'token-budget': TokenBudgetWidget,
+  airfoil: AirfoilWidget,
+  'rocket-launch': RocketLaunchWidget,
+  'booster-landing': BoosterLandingWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {
