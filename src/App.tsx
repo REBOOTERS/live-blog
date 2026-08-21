@@ -6,6 +6,7 @@ import { useTheme, toggleTheme } from './lib/theme'
 import { BlockRenderer } from './components/BlockRenderer'
 import { BlockEditor } from './components/BlockEditor'
 import { getWidget, listWidgets } from './widgets/registry'
+import { extractHeadings, type TocItem } from './lib/toc'
 
 type Mode = 'read' | 'edit'
 
@@ -17,6 +18,7 @@ export default function App() {
   // 目录在桌面端默认展开；窄屏默认收起、以抽屉方式打开
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [query, setQuery] = useState('')
+  const [activeHeadingId, setActiveHeadingId] = useState<string>('')
   const theme = useTheme()
 
   // close the drawer on Escape
@@ -46,6 +48,65 @@ export default function App() {
   const older = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : undefined
   // newer = published later (one row up)
   const newer = currentIndex > 0 ? sorted[currentIndex - 1] : undefined
+
+  // Heading outline for the current article (only meaningful in read mode).
+  // useMemo gives a stable reference so the scroll-spy effect below doesn't
+  // re-subscribe on every render (extractHeadings returns a fresh array each
+  // call, which would otherwise thrash the listener).
+  const currentHeadings: TocItem[] = useMemo(
+    () => (mode === 'read' && current ? extractHeadings(current) : []),
+    [mode, current],
+  )
+
+  // Reset active heading when switching articles — otherwise the previous
+  // article's active id would briefly highlight before the new effect runs.
+  useEffect(() => {
+    setActiveHeadingId('')
+  }, [current?.id, mode])
+
+  // Scroll-spy: pick the last heading whose top has crossed a trigger line
+  // just below the sticky header. Simpler and more reliable than
+  // IntersectionObserver for a long article — the listener only needs the
+  // heading positions on each scroll tick.
+  useEffect(() => {
+    if (mode !== 'read' || currentHeadings.length === 0) return
+    // Trigger line sits 96px below the viewport top: 56px sticky header +
+    // ~40px breathing room so the active heading lines up with the section
+    // the reader is actually looking at.
+    const TRIGGER_Y = 96
+    const compute = () => {
+      let active = currentHeadings[0].id
+      for (const h of currentHeadings) {
+        const el = document.getElementById(h.id)
+        if (!el) continue
+        if (el.getBoundingClientRect().top <= TRIGGER_Y) {
+          active = h.id
+        } else {
+          break
+        }
+      }
+      setActiveHeadingId((prev) => (prev === active ? prev : active))
+    }
+    // Wrap in rAF so we don't fight the scroll event's already-throttled
+    // cadence. `passive: true` keeps scrolling smooth even if the handler
+    // is occasionally slow.
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        compute()
+      })
+    }
+    compute() // initial
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [currentHeadings, mode, current?.id])
 
   // sidebar search: match title / description / text-block content
   const filtered = useMemo(() => {
@@ -121,6 +182,23 @@ export default function App() {
     setCurrentId(id)
     setMode('read')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Smooth-scroll the article body to a heading rendered by BlockRenderer.
+  // `scroll-margin-top` on the heading (set in index.css) keeps it clear of
+  // the sticky 56px header. On narrow screens the drawer also closes so the
+  // scroll target isn't hidden behind it. We set the active id immediately
+  // so the TOC highlights the target even when the target is already on
+  // screen and scrollIntoView doesn't fire any scroll events.
+  const jumpToHeading = (id: string) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    setActiveHeadingId(id)
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (window.location.hash !== `#${id}`) {
+      history.replaceState(null, '', `#${id}`)
+    }
+    collapseDrawer()
   }
 
   return (
@@ -322,11 +400,58 @@ export default function App() {
         </header>
 
         <main
-          className="mx-auto px-6 pb-28 pt-12 sm:pt-16"
-          style={{ maxWidth: mode === 'edit' ? '50rem' : '42rem' }}
+          className={`mx-auto px-6 pb-28 pt-12 sm:pt-16 ${
+            mode === 'edit'
+              ? 'max-w-[50rem]'
+              : 'max-w-[42rem] xl:max-w-[64rem]'
+          }`}
         >
           {mode === 'read' ? (
-            <ReadView article={current} older={older} newer={newer} onNavigate={navigate} />
+            <div className="xl:grid xl:grid-cols-[minmax(0,42rem)_200px] xl:gap-10">
+              <ReadView article={current} older={older} newer={newer} onNavigate={navigate} />
+              {/* In-article TOC: standard markdown outline on the right of
+                  the article. Sticky to the viewport so it stays in view as
+                  you scroll. Only renders on xl+ screens (the layout needs
+                  ~64rem of room: 42rem article + 200px TOC + gap) and only
+                  when the current article actually has headings.
+
+                  The right column deliberately stretches to the full article
+                  height (default grid `align-items: stretch` — the previous
+                  `items-start` capped the column at the TOC's own height and
+                  killed the sticky range after a few screens). */}
+              {currentHeadings.length > 0 && (
+                <aside aria-label="本节目录" className="hidden xl:block">
+                  <nav className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+                    <ul className="space-y-px">
+                      {currentHeadings.map((h) => {
+                        const isActive = h.id === activeHeadingId
+                        return (
+                          <li key={h.id}>
+                            <a
+                              href={`#${h.id}`}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                jumpToHeading(h.id)
+                              }}
+                              aria-current={isActive ? 'location' : undefined}
+                              className={`lb-toc-item block truncate py-1 text-[12.5px] leading-snug transition-colors ${
+                                h.level === 3 ? 'pl-4' : 'pl-2'
+                              } ${
+                                isActive
+                                  ? 'lb-toc-active t-strong font-medium'
+                                  : 't-muted hover:t-text'
+                              }`}
+                            >
+                              {h.text}
+                            </a>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </nav>
+                </aside>
+              )}
+            </div>
           ) : draft ? (
             <EditView
               draft={draft}

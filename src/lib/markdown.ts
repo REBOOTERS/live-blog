@@ -101,7 +101,7 @@ function renderTable(headerCells: string[], rows: string[][]): string {
   return `<div class="lb-table-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${body}</tbody></table></div>`
 }
 
-export function renderMarkdown(src: string): string {
+export function renderMarkdown(src: string, idPrefix?: string): string {
   const lines = src.replace(/\r\n/g, '\n').split('\n')
   const html: string[] = []
   let i = 0
@@ -111,6 +111,10 @@ export function renderMarkdown(src: string): string {
   let inMath = false
   let mathBuf: string[] = []
   let listType: null | 'ul' | 'ol' = null
+  // Monotonic counter for heading ids when idPrefix is provided. Mirrors the
+  // counter used by extractHeadings() in src/lib/toc.ts so the rendered DOM
+  // and the sidebar TOC agree on element ids.
+  let headingIndex = 0
 
   const closeList = () => {
     if (listType) {
@@ -178,7 +182,9 @@ export function renderMarkdown(src: string): string {
     if (h) {
       closeList()
       const level = h[1].length
-      html.push(`<h${level}>${inline(h[2])}</h${level}>`)
+      const idAttr = idPrefix ? ` id="${idPrefix}-h${headingIndex}"` : ''
+      headingIndex++
+      html.push(`<h${level}${idAttr}>${inline(h[2])}</h${level}>`)
       i++
       continue
     }

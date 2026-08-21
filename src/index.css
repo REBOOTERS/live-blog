@@ -319,6 +319,8 @@ textarea {
   line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--lb-text-heading);
+  /* keep the heading clear of the sticky 56px header after a TOC click */
+  scroll-margin-top: 72px;
 }
 .prose-lb h2 {
   font-size: 1.32rem;
@@ -327,6 +329,7 @@ textarea {
   line-height: 1.35;
   letter-spacing: -0.014em;
   color: var(--lb-text-heading);
+  scroll-margin-top: 72px;
 }
 .prose-lb h3 {
   font-size: 1.13rem;
@@ -334,6 +337,7 @@ textarea {
   margin: 1.8em 0 0.55em;
   letter-spacing: -0.01em;
   color: var(--lb-text-strong);
+  scroll-margin-top: 72px;
 }
 .prose-lb ul,
 .prose-lb ol {
@@ -526,4 +530,33 @@ textarea {
   border: 1px solid rgba(214, 69, 69, 0.2);
   padding: 0.15em 0.45em;
   border-radius: 6px;
+}
+
+/* ============================================================
+   In-article TOC — heading sub-list nested under the active
+   article card in the left sidebar.
+   ============================================================ */
+.lb-toc-item {
+  position: relative;
+  transition: color 0.15s ease;
+}
+.lb-toc-item:hover {
+  color: var(--lb-text);
+}
+/* Active heading: a 2px left rail in the accent color, sitting flush
+   against the wrapping border-l, plus accent text. The negative
+   margin pulls the rail out to align with the parent's left edge. */
+.lb-toc-active {
+  color: var(--lb-accent);
+}
+.lb-toc-active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0.35em;
+  bottom: 0.35em;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--lb-accent);
+  transform: translateX(-100%);
 }

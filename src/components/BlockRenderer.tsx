@@ -41,8 +41,9 @@ export function BlockRenderer({ block }: Props) {
       <div
         ref={rootRef}
         className="prose-lb max-w-none"
-        // content is escaped inside renderMarkdown
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(block.content) }}
+        // content is escaped inside renderMarkdown; block.id seeds stable
+        // heading ids so the sidebar TOC can target them.
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(block.content, block.id) }}
       />
     )
   }
