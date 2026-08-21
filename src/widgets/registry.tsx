@@ -16,6 +16,7 @@ import { AirfoilWidget } from './AirfoilWidget'
 import { RocketLaunchWidget } from './RocketLaunchWidget'
 import { BoosterLandingWidget } from './BoosterLandingWidget'
 import { VideoFilterWidget } from './VideoFilterWidget'
+import { PipWidget } from './PipWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -65,6 +66,7 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'rocket-launch': RocketLaunchWidget,
   'booster-landing': BoosterLandingWidget,
   'video-filter': VideoFilterWidget,
+  pip: PipWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {
