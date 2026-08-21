@@ -1,8 +1,8 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v11'
-const LEGACY_KEY = 'liveblog:articles:v10'
+const KEY = 'liveblog:articles:v12'
+const LEGACY_KEY = 'liveblog:articles:v11'
 
 export function loadArticles(): Article[] {
   try {
@@ -11,7 +11,8 @@ export function loadArticles(): Article[] {
       const parsed = JSON.parse(raw) as Article[]
       if (Array.isArray(parsed) && parsed.length) return parsed
     }
-    // First launch on v10 (or v10 empty/corrupt): migrate any v9 data, then seed.
+    // First launch on this version (or storage empty/corrupt): migrate any
+    // previous-version data, then seed.
     return migrate()
   } catch {
     return seedArticles()
@@ -19,8 +20,8 @@ export function loadArticles(): Article[] {
 }
 
 /**
- * v10 → v11 migration. Refreshes built-in demo articles from the latest seed
- * (picking up widget fixes/text updates) while preserving user-created
+ * v11 → v12 migration. Refreshes built-in demo articles from the latest seed
+ * (picking up new articles / text updates) while preserving user-created
  * articles. User articles backfill publishedAt from their existing timestamp.
  */
 function migrate(): Article[] {
