@@ -84,3 +84,30 @@ export function deleteArticle(id: string): Article[] {
   saveArticles(all)
   return all
 }
+
+const FAV_KEY = 'liveblog:favorites:v1'
+
+export function loadFavorites(): string[] {
+  try {
+    const raw = localStorage.getItem(FAV_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((x): x is string => typeof x === 'string')
+  } catch {
+    return []
+  }
+}
+
+export function saveFavorites(ids: string[]): void {
+  localStorage.setItem(FAV_KEY, JSON.stringify(ids))
+}
+
+export function toggleFavorite(id: string): string[] {
+  const next = loadFavorites()
+  const i = next.indexOf(id)
+  if (i >= 0) next.splice(i, 1)
+  else next.push(id)
+  saveFavorites(next)
+  return next
+}

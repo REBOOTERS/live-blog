@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Article, Block } from './types'
-import { loadArticles, upsertArticle } from './storage'
+import { loadArticles, upsertArticle, loadFavorites, toggleFavorite } from './storage'
 import { uid } from './lib/id'
 import { useTheme, toggleTheme } from './lib/theme'
 import { BlockRenderer } from './components/BlockRenderer'
@@ -19,7 +19,34 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [query, setQuery] = useState('')
   const [activeHeadingId, setActiveHeadingId] = useState<string>('')
+  const [favorites, setFavorites] = useState<string[]>(() => loadFavorites())
+  const [favMenuOpen, setFavMenuOpen] = useState(false)
+  const favSet = useMemo(() => new Set(favorites), [favorites])
+  const favMenuRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
+
+  const onToggleFavorite = (id: string) => {
+    setFavorites(toggleFavorite(id))
+  }
+
+  // Close the favorites menu on outside click / Escape
+  useEffect(() => {
+    if (!favMenuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (favMenuRef.current && !favMenuRef.current.contains(e.target as Node)) {
+        setFavMenuOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFavMenuOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [favMenuOpen])
 
   // close the drawer on Escape
   useEffect(() => {
@@ -119,6 +146,11 @@ export default function App() {
         a.blocks.some((b) => b.kind === 'text' && b.content.toLowerCase().includes(q)),
     )
   }, [sorted, query])
+
+  const favoriteArticles = useMemo(
+    () => sorted.filter((a) => favSet.has(a.id)),
+    [sorted, favSet],
+  )
 
   // sync draft when switching into edit mode / changing article
   useEffect(() => {
@@ -279,7 +311,7 @@ export default function App() {
                 return (
                   <div
                     key={a.id}
-                    className={`cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
+                    className={`group flex cursor-pointer items-start gap-1 rounded-xl px-3 py-2.5 transition-colors ${
                       active ? '' : 'hover:bg-[var(--lb-hover)]'
                     }`}
                     style={active ? { background: 'var(--lb-hover)' } : undefined}
@@ -289,18 +321,33 @@ export default function App() {
                       collapseDrawer()
                     }}
                   >
-                    <div
-                      className={`line-clamp-2 text-[14.5px] leading-snug ${
-                        active ? 't-strong font-semibold' : 't-text font-medium'
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={`line-clamp-2 text-[14.5px] leading-snug ${
+                          active ? 't-strong font-semibold' : 't-text font-medium'
+                        }`}
+                      >
+                        {a.title || '无标题'}
+                      </div>
+                      <div className="t-faint mt-1 flex items-center gap-2 text-[11.5px]">
+                        <span>{new Date(a.publishedAt || a.updatedAt).toLocaleDateString()}</span>
+                        <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                        <span>{readingTime(a)} 分钟阅读</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleFavorite(a.id)
+                      }}
+                      title={favSet.has(a.id) ? '取消收藏' : '收藏'}
+                      aria-label={favSet.has(a.id) ? '取消收藏' : '收藏'}
+                      className={`-mr-1 -mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--lb-bg-2)] ${
+                        favSet.has(a.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`}
                     >
-                      {a.title || '无标题'}
-                    </div>
-                    <div className="t-faint mt-1 flex items-center gap-2 text-[11.5px]">
-                      <span>{new Date(a.publishedAt || a.updatedAt).toLocaleDateString()}</span>
-                      <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
-                      <span>{readingTime(a)} 分钟阅读</span>
-                    </div>
+                      <HeartIcon filled={favSet.has(a.id)} className="h-[15px] w-[15px]" />
+                    </button>
                   </div>
                 )
               })}
@@ -352,6 +399,101 @@ export default function App() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              <div className="relative" ref={favMenuRef}>
+                <button
+                  onClick={() => setFavMenuOpen((v) => !v)}
+                  title="我的收藏"
+                  aria-label="我的收藏"
+                  aria-expanded={favMenuOpen}
+                  className="t-btn relative flex h-9 w-9 items-center justify-center rounded-full"
+                >
+                  <BookmarkIcon filled={favMenuOpen || favorites.length > 0} className="h-[18px] w-[18px]" />
+                </button>
+                {favMenuOpen && (
+                  <div
+                    className="t-panel absolute right-0 top-11 z-50 w-[24rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-2xl"
+                    style={{
+                      background: 'var(--lb-surface-bg)',
+                      border: '1px solid var(--lb-border-soft)',
+                    }}
+                  >
+                    <div
+                      className="t-heading flex items-center gap-2 border-b px-5 py-3.5 text-[15px] font-semibold"
+                      style={{ borderColor: 'var(--lb-border-soft)' }}
+                    >
+                      <BookmarkIcon filled className="h-[15px] w-[15px]" />
+                      我的收藏
+                    </div>
+                    <div className="max-h-[28rem] overflow-y-auto p-2">
+                      {favoriteArticles.length === 0 ? (
+                        <div className="t-faint px-3 py-14 text-center text-xs leading-relaxed">
+                          还没有收藏的文章。
+                          <br />
+                          打开一篇文章，点击标题旁的心形即可收藏。
+                        </div>
+                      ) : (
+                        favoriteArticles.map((a) => {
+                          const active = a.id === currentId
+                          const hasWidget = a.blocks.some((b) => b.kind === 'widget')
+                          return (
+                            <div
+                              key={a.id}
+                              className={`group flex cursor-pointer items-start gap-3 rounded-xl px-3 py-3 transition-colors ${
+                                active ? '' : 'hover:bg-[var(--lb-hover)]'
+                              }`}
+                              style={active ? { background: 'var(--lb-hover)' } : undefined}
+                              onClick={() => {
+                                setCurrentId(a.id)
+                                setMode('read')
+                                setFavMenuOpen(false)
+                                collapseDrawer()
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                              }}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="t-strong line-clamp-2 text-[14px] font-semibold leading-snug">
+                                  {a.title || '无标题'}
+                                </div>
+                                {a.description && (
+                                  <div className="t-muted mt-1 line-clamp-2 text-[12.5px] leading-relaxed">
+                                    {a.description}
+                                  </div>
+                                )}
+                                <div className="t-faint mt-2 flex flex-wrap items-center gap-x-2 text-[11px]">
+                                  <span>{new Date(a.publishedAt || a.updatedAt).toLocaleDateString()}</span>
+                                  <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                                  <span>{readingTime(a)} 分钟阅读</span>
+                                  <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                                  <span>{a.blocks.length} 个段落</span>
+                                  {hasWidget && (
+                                    <>
+                                      <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                                      <span>含交互</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onToggleFavorite(a.id)
+                                }}
+                                title="取消收藏"
+                                aria-label="取消收藏"
+                                className="-mr-1 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--lb-faint)] opacity-0 transition-colors hover:bg-[var(--lb-bg-2)] hover:text-[var(--lb-text-strong)] group-hover:opacity-100"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                  <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <a
                 href="https://github.com/REBOOTERS/live-blog"
                 target="_blank"
@@ -391,8 +533,16 @@ export default function App() {
                   </button>
                 </>
               ) : (
-                <button onClick={() => setMode('edit')} className="t-btn-primary rounded-full px-4 py-1.5 text-sm">
-                  编辑
+                <button
+                  onClick={() => setMode('edit')}
+                  title="编辑文章"
+                  aria-label="编辑文章"
+                  className="t-btn hidden h-9 w-9 items-center justify-center rounded-full sm:flex"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -408,7 +558,14 @@ export default function App() {
         >
           {mode === 'read' ? (
             <div className="xl:grid xl:grid-cols-[minmax(0,42rem)_200px] xl:gap-10">
-              <ReadView article={current} older={older} newer={newer} onNavigate={navigate} />
+              <ReadView
+                article={current}
+                older={older}
+                newer={newer}
+                onNavigate={navigate}
+                isFavorite={favSet.has(current.id)}
+                onToggleFavorite={() => onToggleFavorite(current.id)}
+              />
               {/* In-article TOC: standard markdown outline on the right of
                   the article. Sticky to the viewport so it stays in view as
                   you scroll. Only renders on xl+ screens (the layout needs
@@ -486,17 +643,32 @@ function ReadView({
   older,
   newer,
   onNavigate,
+  isFavorite,
+  onToggleFavorite,
 }: {
   article: Article
   older?: Article
   newer?: Article
   onNavigate: (id: string) => void
+  isFavorite: boolean
+  onToggleFavorite: () => void
 }) {
   const hasWidget = article.blocks.some((b) => b.kind === 'widget')
   return (
     <article>
-      <div className="t-faint mb-4 text-[12px] font-medium uppercase tracking-[0.18em]">
-        {hasWidget ? '交互式文章' : '文章'}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="t-faint text-[12px] font-medium uppercase tracking-[0.18em]">
+          {hasWidget ? '交互式文章' : '文章'}
+        </div>
+        <button
+          onClick={onToggleFavorite}
+          title={isFavorite ? '取消收藏' : '收藏文章'}
+          aria-label={isFavorite ? '取消收藏' : '收藏文章'}
+          aria-pressed={isFavorite}
+          className="t-btn flex h-9 w-9 items-center justify-center rounded-full"
+        >
+          <HeartIcon filled={isFavorite} className="h-[18px] w-[18px]" />
+        </button>
       </div>
       <h1
         className="t-heading text-[1.875rem] font-semibold leading-[1.15] tracking-[-0.022em] sm:text-[2.125rem] md:text-[2.25rem]"
@@ -559,6 +731,40 @@ function ReadView({
         </nav>
       )}
     </article>
+  )
+}
+
+function HeartIcon({ filled, className }: { filled: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? 'var(--lb-accent)' : 'none'}
+      stroke={filled ? 'var(--lb-accent)' : 'currentColor'}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  )
+}
+
+function BookmarkIcon({ filled, className }: { filled: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? 'var(--lb-accent)' : 'none'}
+      stroke={filled ? 'var(--lb-accent)' : 'currentColor'}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
   )
 }
 
