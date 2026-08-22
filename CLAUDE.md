@@ -8,14 +8,6 @@
 
 核心定位：文字负责讲故事，可操作的模型负责建立直觉。
 
-## 技术栈
-
-- **React 18** + **TypeScript**（strict 模式）
-- **Vite 6** 构建 / 开发服务器
-- **Tailwind CSS 4**（通过 `@tailwindcss/vite` 插件接入，入口在 `src/index.css` 用 `@import "tailwindcss"`）
-- **可视化零依赖**：Canvas 2D 与 SVG 全部手写。唯一的额外运行时依赖是 **KaTeX**（数学公式渲染）；Markdown 渲染器为自写，代码高亮为自写的轻量分词器（`src/lib/highlight.ts`）
-- 包管理器：npm（Node v24+）
-
 ## 常用命令
 
 ```bash
@@ -27,95 +19,19 @@ npm run preview    # 预览生产构建
 
 构建分两步：先 `tsc -b`（含 `tsconfig.json` 与 `tsconfig.node.json` 两个 project reference），再 `vite build`。**任何 PR 必须通过 `npm run build`**，它会执行严格类型检查（`noUnusedLocals` / `noUnusedParameters` 均开启）。
 
-## 目录结构
-
-```
-live-blog/
-├── index.html              # Vite 入口，挂载 #root
-├── vite.config.ts          # react + tailwindcss 插件
-├── tsconfig.json           # app 源码配置（引用 tsconfig.node.json）
-├── tsconfig.node.json      # vite.config.ts 的 composite 配置
-├── public/favicon.svg
-└── src/
-    ├── main.tsx            # React 挂载入口
-    ├── index.css           # Tailwind + .prose-lb 文章排版 + .math-* 公式样式
-    ├── App.tsx             # 顶层：侧栏、阅读/编辑模式切换、增删文章
-    ├── types.ts            # Article / Block 数据模型
-    ├── storage.ts          # localStorage 读写（key: liveblog:articles:v7）
-    ├── seed.ts             # 首次启动的示例文章
-    ├── lib/
-    │   ├── useAnimationFrame.ts  # rAF 循环 hook（dt 秒级，限制最大 0.05s）
-    │   ├── canvas.ts             # prepareCanvas()：HiDPI 清晰绘制（所有 Canvas Widget 必用）
-    │   ├── id.ts                 # uid()
-    │   ├── markdown.ts           # Markdown 渲染器（含 KaTeX 公式、代码高亮、窗口栏）
-    │   └── highlight.ts          # 轻量正则分词器，为代码块生成 tok-* 高亮 HTML
-    ├── components/
-    │   ├── BlockRenderer.tsx  # 阅读器中按 block.kind 分发渲染
-    │   ├── BlockEditor.tsx    # 编辑器中的区块卡片（文字/Widget 编辑）
-    │   ├── ConfigPanel.tsx    # schema 驱动的 Widget 属性表单
-    │   └── WidgetView.tsx     # 从 registry 取组件并渲染（含标题/说明）
-    └── widgets/
-        ├── registry.tsx            # Widget 注册表与 ConfigField 类型
-        ├── PendulumWidget.tsx      # 单摆（Canvas，鼠标拖动）
-        ├── BezierWidget.tsx        # 三次贝塞尔（SVG，拖动控制点）
-        ├── SortWidget.tsx          # 排序可视化（DOM 柱子 + 内部数值标签）
-        ├── ProjectileWidget.tsx    # 抛体运动（Canvas，弹弓式拖拽）
-        ├── FourierWidget.tsx       # 傅里叶变换（Canvas，手绘信号 + DFT 重建 + 频谱）
-        ├── MatrixWidget.tsx        # 矩阵变换（SVG，拖动两列基向量 + 行列式）
-        ├── BackpropWidget.tsx      # 反向传播（Canvas，真实 tanh MLP 训练 + 权重图）
-        ├── ColorWidget.tsx         # 三原色混色（Canvas，加色/减色 + RGB/HSL）
-        ├── SoundWaveWidget.tsx     # 声波与频率（Canvas + Web Audio，真实发声 + 拍频）
-        ├── TransformerWidget.tsx   # Transformer 自注意力（SVG，真实 scaled dot-product）
-        ├── GraphSearchWidget.tsx   # BFS/DFS 迷宫遍历（Canvas，彩虹顺序上色 + 前沿 + 最短路径）
-        ├── TokenizerWidget.tsx     # 分词可视化（DOM，近似 BPE 切词 + o200k/cl100k 对比）
-        ├── TokenBudgetWidget.tsx   # Token 预算估算（DOM，上下文窗口堆叠条 + 费用估算）
-        ├── AirfoilWidget.tsx       # 翼型升力与失速（Canvas，绕流粒子 + Cl-α 曲线 + 压力分布）
-        ├── RocketLaunchWidget.tsx  # 火箭发射分级（Canvas，真实积分 + 理想/重力/阻力 Δv）
-        ├── BoosterLandingWidget.tsx# 助推器回收着陆（Canvas，hover-slam 制动点 + 手动/自动点火）
-        ├── VideoFilterWidget.tsx   # 视频滤镜（Canvas，点运算调色 + 3×3 卷积核 + 像素放大镜）
-        └── PipWidget.tsx           # 画中画（Canvas 视频 + 可拖拽浮窗 + 真实 Document PiP API）
-```
-
 ## 数据模型
 
-定义在 `src/types.ts`：
-
-```ts
-type Block =
-  | { id: string; kind: 'text'; content: string }              // Markdown
-  | { id: string; kind: 'widget'; type: string; props: Record<string, unknown> }
-
-interface Article {
-  id: string
-  title: string
-  description: string
-  publishedAt: string // ISO，发布时间（稳定，作为文章列表排序键；v7 迁移时旧文章用 updatedAt 回填）
-  updatedAt: string   // ISO，最后修改时间（每次保存刷新）
-  blocks: Block[]
-}
-```
+定义在 `src/types.ts`：`Block`（`text` 含 Markdown / `widget` 含 type+props）+ `Article`（`id` / `title` / `description` / `publishedAt` / `updatedAt` / `blocks`）。
 
 - 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v13`；修改数据结构或 seed 内容时记得升版本号并把上一版 key 作为 `LEGACY_KEY`。迁移会非破坏性地把内置 demo 文章刷新为最新 seed、追加新 demo、并保留用户自建文章。v7 迁移新增 `publishedAt`：内置 demo 用 seed 里的固定发布日期，用户自建文章回填其 `updatedAt`；其后 v8～v13 迁移仅刷新 seed、追加新 demo）。
 - `Block.id` 由 `src/lib/id.ts` 的 `uid(prefix)` 生成；示例文章使用稳定 id（`art-pendulum` 等）。
-- 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回十一篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体 / 傅里叶 / 矩阵 / 反向传播 / 三原色混色 / 声波 / Transformer / BFS-DFS，每个知识点一篇）。
+- 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回十五篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体 / 傅里叶 / 矩阵 / 反向传播 / 三原色混色 / 声波 / Transformer / BFS-DFS / Token 计算 / 空气动力学 / 视频滤镜 / 画中画，每个知识点一篇）。
 
 ## 核心架构模式
 
 ### Widget 注册表（最重要的扩展点）
 
-所有交互组件在 `src/widgets/registry.tsx` 注册，结构：
-
-```ts
-interface WidgetDefinition<P extends object = Record<string, unknown>> {
-  type: string                // 唯一标识，持久化到 block.type
-  label: string               // 中文名
-  description: string         // 阅读器中显示的说明
-  icon: string                // emoji，用于菜单
-  defaultProps: P             // 新建时的初始 props
-  configSchema: ConfigField[] // 驱动编辑器属性面板
-  Component: ComponentType<{ props: P }>  // 实际渲染组件
-}
-```
+所有交互组件在 `src/widgets/registry.tsx` 注册：`WidgetDefinition<P>` 包含 `type` / `label` / `description` / `icon` / `defaultProps` / `configSchema` / `Component`。
 
 `ConfigField` 支持类型：`range` / `number` / `select` / `color` / `checkbox` / `text` / `textarea`。`ConfigPanel.tsx` 根据 schema 自动生成表单，**新增属性一般无需手写表单代码**。
 
@@ -181,8 +97,6 @@ interface WidgetDefinition<P extends object = Record<string, unknown>> {
 - 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵/三原色）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
 - 内置示例共十五篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历、大模型 Token 计算、空气动力学（翼型升力/火箭发射/助推器回收三个 Widget）、视频滤镜（点运算 + 卷积）、画中画（视频 PiP vs 文档 PiP）。localStorage key 已升至 `v13`，迁移逻辑见 `storage.ts`。内置 demo 各有一个固定发布日期（`seed.ts` 的 `RELEASE_DATES`），文章列表按 `publishedAt` 倒序排列。
 - **文章写作风格（对标 john.fun/elevators，2026-08-16 起）**：段落 1–3 句一个观点，不写教科书长块；同一 Widget 在一篇文章中多次出现，每次只解锁一个新视角（切 prop 预设、用不同段落引导看不同的东西）；先建立「度量工具/账本」再用它评判对比；用具体数字做锚点（276 次比较、8 分钟 vs 0.03 秒）；反直觉结论做高潮；结尾轻快呼应开头，不写「动手实验」式清单和总结段。首篇范例：`seed.ts` 的排序文章。
-- **2026-08-05 视觉改版**：整体改为深色霓虹科技主题（indigo→cyan 渐变主色、辉光、网格底纹、`.lb-surface` 卡片），全部 Widget 画布重绘为深色高对比配色并加发光；range 控件自定义霓虹滑块。数学公式用 KaTeX、代码块有语法高亮。新增 Widget 时请遵循上面的「画布配色约定」。
-- **2026-08-05 清晰度/交互修复**：① 所有 Canvas Widget 改用 `prepareCanvas` 解决文字模糊（见上「指针/交互约定」）；② 修复 MatrixWidget 的 `viewBox` 尺度不匹配导致图形缩成中心一点、无法交互的问题。
 
 ## 不做的事（避免误解范围）
 
