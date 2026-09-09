@@ -336,5 +336,6 @@ export const SoundWaveWidget: WidgetDefinition<SoundProps> = {
       ],
     },
   ],
+  exportable: true,
   Component: SoundWave,
 }

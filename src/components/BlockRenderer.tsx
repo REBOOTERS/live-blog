@@ -5,9 +5,13 @@ import { WidgetView } from './WidgetView'
 
 interface Props {
   block: Block
+  /** 1-based exhibit number for widget blocks (assigned by the read view). */
+  figNo?: number
+  /** Exported-video filename prefix (文章名-章节名), passed through to widgets. */
+  exportPrefix?: string
 }
 
-export function BlockRenderer({ block }: Props) {
+export function BlockRenderer({ block, figNo, exportPrefix }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
 
   // One delegated click listener handles every code-block "copy" button inside
@@ -41,10 +45,11 @@ export function BlockRenderer({ block }: Props) {
       <div
         ref={rootRef}
         className="prose-lb max-w-none"
-        // content is escaped inside renderMarkdown
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(block.content) }}
+        // content is escaped inside renderMarkdown; block.id seeds stable
+        // heading ids so the sidebar TOC can target them.
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(block.content, block.id) }}
       />
     )
   }
-  return <WidgetView type={block.type} props={block.props} />
+  return <WidgetView type={block.type} props={block.props} figNo={figNo} exportPrefix={exportPrefix} />
 }

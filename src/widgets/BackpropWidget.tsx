@@ -490,5 +490,6 @@ export const BackpropWidget: WidgetDefinition<BackpropProps> = {
       options: TARGETS.map((t) => ({ value: t.id, label: t.label })),
     },
   ],
+  exportable: true,
   Component: Backprop,
 }

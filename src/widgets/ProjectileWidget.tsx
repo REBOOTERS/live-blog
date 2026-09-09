@@ -387,5 +387,6 @@ export const ProjectileWidget: WidgetDefinition<ProjectileProps> = {
     { key: 'showVelocity', label: '显示速度分量', type: 'checkbox' },
     { key: 'trail', label: '显示轨迹', type: 'checkbox' },
   ],
+  exportable: true,
   Component: Projectile,
 }

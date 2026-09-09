@@ -244,5 +244,6 @@ export const BezierWidget: WidgetDefinition<BezierProps> = {
     { key: 'showConstruction', label: '显示构造线', type: 'checkbox' },
     { key: 'color', label: '曲线颜色', type: 'color' },
   ],
+  exportable: true,
   Component: Bezier,
 }

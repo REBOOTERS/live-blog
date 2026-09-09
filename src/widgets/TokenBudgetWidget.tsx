@@ -409,5 +409,6 @@ export const TokenBudgetWidget: WidgetDefinition<TokenBudgetProps> = {
     { key: 'priceIn', label: '输入价格（$/1M）', type: 'number', min: 0, step: 0.1, unit: '$' },
     { key: 'priceOut', label: '输出价格（$/1M）', type: 'number', min: 0, step: 0.1, unit: '$' },
   ],
+  exportable: true,
   Component: TokenBudget,
 }

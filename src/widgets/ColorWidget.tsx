@@ -265,5 +265,6 @@ export const ColorWidget: WidgetDefinition<ColorProps> = {
     },
     { key: 'animate', label: '自动循环演示', type: 'checkbox' },
   ],
+  exportable: true,
   Component: ColorMix,
 }

@@ -17,6 +17,15 @@ import { RocketLaunchWidget } from './RocketLaunchWidget'
 import { BoosterLandingWidget } from './BoosterLandingWidget'
 import { VideoFilterWidget } from './VideoFilterWidget'
 import { PipWidget } from './PipWidget'
+import { WatermarkDiceWidget } from './WatermarkDiceWidget'
+import { WatermarkCountWidget } from './WatermarkCountWidget'
+import { WatermarkEditWidget } from './WatermarkEditWidget'
+import { FrameConsistencyWidget } from './FrameConsistencyWidget'
+import { VideoLedgerWidget } from './VideoLedgerWidget'
+import { VideoPatchWidget } from './VideoPatchWidget'
+import { WaveCancelWidget } from './WaveCancelWidget'
+import { AncDelayWidget } from './AncDelayWidget'
+import { AncLmsWidget } from './AncLmsWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -46,6 +55,8 @@ export interface WidgetDefinition<P extends object = Record<string, unknown>> {
   defaultProps: P
   configSchema: ConfigField[]
   Component: ComponentType<{ props: P; editable?: boolean; onPropsChange?: (props: P) => void }>
+  /** 支持把演示动画导出为视频（Canvas 直录；SVG/DOM 逐帧光栅化）。 */
+  exportable?: boolean
 }
 
 const registry: Record<string, WidgetDefinition<any>> = {
@@ -67,6 +78,15 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'booster-landing': BoosterLandingWidget,
   'video-filter': VideoFilterWidget,
   pip: PipWidget,
+  'watermark-dice': WatermarkDiceWidget,
+  'watermark-count': WatermarkCountWidget,
+  'watermark-edit': WatermarkEditWidget,
+  'frame-consistency': FrameConsistencyWidget,
+  'video-ledger': VideoLedgerWidget,
+  'video-patches': VideoPatchWidget,
+  'wave-cancel': WaveCancelWidget,
+  'anc-delay': AncDelayWidget,
+  'anc-lms': AncLmsWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {

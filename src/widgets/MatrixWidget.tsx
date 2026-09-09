@@ -309,5 +309,6 @@ export const MatrixWidget: WidgetDefinition<MatrixProps> = {
     { key: 'showGrid', label: '显示网格', type: 'checkbox' },
     { key: 'showDeterminant', label: '显示行列式', type: 'checkbox' },
   ],
+  exportable: true,
   Component: Matrix,
 }

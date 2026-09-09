@@ -387,5 +387,6 @@ export const FourierWidget: WidgetDefinition<FourierProps> = {
     { key: 'speed', label: '扫描速度', type: 'range', min: 0.1, max: 2, step: 0.05 },
     { key: 'showSpectrum', label: '显示频谱', type: 'checkbox' },
   ],
+  exportable: true,
   Component: Fourier,
 }

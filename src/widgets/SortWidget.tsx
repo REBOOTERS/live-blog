@@ -327,5 +327,6 @@ export const SortWidget: WidgetDefinition<SortProps> = {
     },
     { key: 'speed', label: '速度', type: 'range', min: 1, max: 60, step: 1, unit: '步/秒' },
   ],
+  exportable: true,
   Component: Sort,
 }

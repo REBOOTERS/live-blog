@@ -400,5 +400,6 @@ export const TokenizerWidget: WidgetDefinition<TokenizerProps> = {
       ],
     },
   ],
+  exportable: true,
   Component: Tokenizer,
 }

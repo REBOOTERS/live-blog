@@ -462,5 +462,6 @@ export const AirfoilWidget: WidgetDefinition<AirfoilProps> = {
     { key: 'speed', label: '空速', type: 'range', min: 20, max: 140, step: 1, unit: 'm/s' },
     { key: 'autoSweep', label: '自动扫迎角', type: 'checkbox' },
   ],
+  exportable: true,
   Component: Airfoil,
 }

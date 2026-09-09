@@ -786,5 +786,6 @@ export const VideoFilterWidget: WidgetDefinition<VideoFilterProps> = {
     { key: 'intensity', label: '卷积强度', type: 'range', min: 0, max: 1, step: 0.01 },
     { key: 'playing', label: '自动播放', type: 'checkbox' },
   ],
+  exportable: true,
   Component: VideoFilter,
 }

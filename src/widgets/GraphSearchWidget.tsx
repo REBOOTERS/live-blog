@@ -380,5 +380,6 @@ export const GraphSearchWidget: WidgetDefinition<GraphSearchProps> = {
     },
     { key: 'speed', label: '速度', type: 'range', min: 1, max: 40, step: 1, unit: '步/秒' },
   ],
+  exportable: true,
   Component: GraphSearch,
 }

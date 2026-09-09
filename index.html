@@ -7,15 +7,17 @@
     <title>LiveBlog · 交互式写作平台</title>
     <script>
       // Apply theme before first paint to avoid a flash. Honors the saved
-      // choice; otherwise follows the OS preference (prefers-color-scheme).
+      // mode ('light' | 'dark' | 'system'); 'system'/null follows the OS
+      // preference (prefers-color-scheme).
       (function () {
         try {
           var saved = localStorage.getItem('liveblog:theme')
           var t =
-            saved ||
-            (window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'dark'
-              : 'light')
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
           document.documentElement.dataset.theme = t
         } catch (e) {
           document.documentElement.dataset.theme = 'light'

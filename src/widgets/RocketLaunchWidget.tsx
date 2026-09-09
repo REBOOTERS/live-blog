@@ -601,5 +601,6 @@ export const RocketLaunchWidget: WidgetDefinition<RocketLaunchProps> = {
       ],
     },
   ],
+  exportable: true,
   Component: RocketLaunch,
 }

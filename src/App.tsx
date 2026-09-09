@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Article, Block } from './types'
-import { loadArticles, upsertArticle } from './storage'
+import { loadArticles, upsertArticle, loadFavorites, toggleFavorite } from './storage'
 import { uid } from './lib/id'
-import { useTheme, toggleTheme } from './lib/theme'
 import { BlockRenderer } from './components/BlockRenderer'
 import { BlockEditor } from './components/BlockEditor'
 import { getWidget, listWidgets } from './widgets/registry'
+import { extractHeadings, sectionTitleByBlockId, type TocItem } from './lib/toc'
+import { SettingsMenu } from './components/SettingsMenu'
 
 type Mode = 'read' | 'edit'
 
@@ -17,7 +18,35 @@ export default function App() {
   // 目录在桌面端默认展开；窄屏默认收起、以抽屉方式打开
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [query, setQuery] = useState('')
-  const theme = useTheme()
+  const [activeHeadingId, setActiveHeadingId] = useState<string>('')
+  const [favorites, setFavorites] = useState<string[]>(() => loadFavorites())
+  const [favMenuOpen, setFavMenuOpen] = useState(false)
+  const favSet = useMemo(() => new Set(favorites), [favorites])
+  const favMenuRef = useRef<HTMLDivElement>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+
+  const onToggleFavorite = (id: string) => {
+    setFavorites(toggleFavorite(id))
+  }
+
+  // Close the favorites menu on outside click / Escape
+  useEffect(() => {
+    if (!favMenuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (favMenuRef.current && !favMenuRef.current.contains(e.target as Node)) {
+        setFavMenuOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFavMenuOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [favMenuOpen])
 
   // close the drawer on Escape
   useEffect(() => {
@@ -47,6 +76,90 @@ export default function App() {
   // newer = published later (one row up)
   const newer = currentIndex > 0 ? sorted[currentIndex - 1] : undefined
 
+  // Heading outline for the current article (only meaningful in read mode).
+  // useMemo gives a stable reference so the scroll-spy effect below doesn't
+  // re-subscribe on every render (extractHeadings returns a fresh array each
+  // call, which would otherwise thrash the listener).
+  const currentHeadings: TocItem[] = useMemo(
+    () => (mode === 'read' && current ? extractHeadings(current) : []),
+    [mode, current],
+  )
+
+  // Reset active heading when switching articles — otherwise the previous
+  // article's active id would briefly highlight before the new effect runs.
+  useEffect(() => {
+    setActiveHeadingId('')
+  }, [current?.id, mode])
+
+  // Scroll-spy: pick the last heading whose top has crossed a trigger line
+  // just below the sticky header. Simpler and more reliable than
+  // IntersectionObserver for a long article — the listener only needs the
+  // heading positions on each scroll tick.
+  useEffect(() => {
+    if (mode !== 'read' || currentHeadings.length === 0) return
+    // Trigger line sits 96px below the viewport top: 56px sticky header +
+    // ~40px breathing room so the active heading lines up with the section
+    // the reader is actually looking at.
+    const TRIGGER_Y = 96
+    const compute = () => {
+      let active = currentHeadings[0].id
+      for (const h of currentHeadings) {
+        const el = document.getElementById(h.id)
+        if (!el) continue
+        if (el.getBoundingClientRect().top <= TRIGGER_Y) {
+          active = h.id
+        } else {
+          break
+        }
+      }
+      setActiveHeadingId((prev) => (prev === active ? prev : active))
+    }
+    // Wrap in rAF so we don't fight the scroll event's already-throttled
+    // cadence. `passive: true` keeps scrolling smooth even if the handler
+    // is occasionally slow.
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        compute()
+      })
+    }
+    compute() // initial
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [currentHeadings, mode, current?.id])
+
+  // Reading progress — a 2px accent hairline along the sticky header's
+  // bottom edge. Written straight to the DOM (scaleX) via ref so scrolling
+  // never triggers a React re-render.
+  useEffect(() => {
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const doc = document.documentElement
+      const max = doc.scrollHeight - doc.clientHeight
+      const p = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${p})`
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [currentId, mode])
+
   // sidebar search: match title / description / text-block content
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -58,6 +171,24 @@ export default function App() {
         a.blocks.some((b) => b.kind === 'text' && b.content.toLowerCase().includes(q)),
     )
   }, [sorted, query])
+
+  const favoriteArticles = useMemo(
+    () => sorted.filter((a) => favSet.has(a.id)),
+    [sorted, favSet],
+  )
+
+  // Archive index: group the (date-sorted) list by publication month so the
+  // sidebar reads as a journal's volume index rather than a flat feed.
+  const monthGroups = useMemo(() => {
+    const groups: { key: string; items: Article[] }[] = []
+    for (const a of filtered) {
+      const key = (a.publishedAt || a.updatedAt).slice(0, 7)
+      const last = groups[groups.length - 1]
+      if (last && last.key === key) last.items.push(a)
+      else groups.push({ key, items: [a] })
+    }
+    return groups
+  }, [filtered])
 
   // sync draft when switching into edit mode / changing article
   useEffect(() => {
@@ -117,10 +248,73 @@ export default function App() {
     if (window.innerWidth < 1024) setSidebarOpen(false)
   }
 
+  const renderArticleItem = (a: Article) => {
+    const active = a.id === currentId
+    return (
+      <div
+        key={a.id}
+        className={`group flex cursor-pointer items-start gap-1 rounded-xl px-3 py-2.5 transition-colors ${
+          active ? '' : 'hover:bg-[var(--lb-hover)]'
+        }`}
+        style={active ? { background: 'var(--lb-hover)' } : undefined}
+        onClick={() => {
+          setCurrentId(a.id)
+          setMode('read')
+          collapseDrawer()
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <div
+            className={`line-clamp-2 text-[14.5px] leading-snug ${
+              active ? 't-strong font-semibold' : 't-text font-medium'
+            }`}
+          >
+            {a.title || '无标题'}
+          </div>
+          <div className="t-faint lb-mono mt-1 flex items-center gap-2 text-[10.5px] tracking-[0.02em]">
+            <span>{isoDate(a)}</span>
+            <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+            <span>{readingTime(a)} min</span>
+          </div>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleFavorite(a.id)
+          }}
+          title={favSet.has(a.id) ? '取消收藏' : '收藏'}
+          aria-label={favSet.has(a.id) ? '取消收藏' : '收藏'}
+          className={`-mr-1 -mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--lb-bg-2)] ${
+            favSet.has(a.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        >
+          <HeartIcon filled={favSet.has(a.id)} className="h-[15px] w-[15px]" />
+        </button>
+      </div>
+    )
+  }
+
   const navigate = (id: string) => {
     setCurrentId(id)
     setMode('read')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Smooth-scroll the article body to a heading rendered by BlockRenderer.
+  // `scroll-margin-top` on the heading (set in index.css) keeps it clear of
+  // the sticky 56px header. On narrow screens the drawer also closes so the
+  // scroll target isn't hidden behind it. We set the active id immediately
+  // so the TOC highlights the target even when the target is already on
+  // screen and scrollIntoView doesn't fire any scroll events.
+  const jumpToHeading = (id: string) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    setActiveHeadingId(id)
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (window.location.hash !== `#${id}`) {
+      history.replaceState(null, '', `#${id}`)
+    }
+    collapseDrawer()
   }
 
   return (
@@ -150,7 +344,12 @@ export default function App() {
             className="flex h-14 shrink-0 items-center border-b px-5"
             style={{ borderColor: 'var(--lb-border-soft)' }}
           >
-            <span className="t-heading text-[15px] font-semibold tracking-tight">文章目录</span>
+            <span className="t-heading text-[15px] font-semibold tracking-tight">
+              文章目录
+              <span className="lb-mono t-faint ml-2 text-[11px] font-medium tracking-[0.08em]">
+                {String(sorted.length).padStart(2, '0')}
+              </span>
+            </span>
             <button
               onClick={() => setSidebarOpen(false)}
               aria-label="收起目录"
@@ -192,46 +391,28 @@ export default function App() {
               写文章
             </button>
 
-            <div className="t-faint mb-2 px-2 text-[11px] font-medium uppercase tracking-[0.14em]">
-              {query.trim() ? (filtered.length ? `${filtered.length} 篇匹配` : '无匹配') : '全部文章'}
-            </div>
-            <div className="space-y-0.5">
-              {filtered.map((a) => {
-                const active = a.id === currentId
-                return (
-                  <div
-                    key={a.id}
-                    className={`cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                      active ? '' : 'hover:bg-[var(--lb-hover)]'
-                    }`}
-                    style={active ? { background: 'var(--lb-hover)' } : undefined}
-                    onClick={() => {
-                      setCurrentId(a.id)
-                      setMode('read')
-                      collapseDrawer()
-                    }}
-                  >
-                    <div
-                      className={`line-clamp-2 text-[14.5px] leading-snug ${
-                        active ? 't-strong font-semibold' : 't-text font-medium'
-                      }`}
-                    >
-                      {a.title || '无标题'}
-                    </div>
-                    <div className="t-faint mt-1 flex items-center gap-2 text-[11.5px]">
-                      <span>{new Date(a.publishedAt || a.updatedAt).toLocaleDateString()}</span>
-                      <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
-                      <span>{readingTime(a)} 分钟阅读</span>
-                    </div>
-                  </div>
-                )
-              })}
-              {query.trim() && filtered.length === 0 && (
-                <div className="t-faint px-3 py-8 text-center text-xs">
-                  没有匹配「{query.trim()}」的文章
+            {query.trim() ? (
+              <>
+                <div className="lb-group-label mb-2 px-3">
+                  {filtered.length ? `${filtered.length} 篇匹配` : '无匹配'}
                 </div>
-              )}
-            </div>
+                <div className="space-y-0.5">
+                  {filtered.map(renderArticleItem)}
+                  {filtered.length === 0 && (
+                    <div className="t-faint px-3 py-8 text-center text-xs">
+                      没有匹配「{query.trim()}」的文章
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              monthGroups.map((g) => (
+                <div key={g.key} className="mb-4 last:mb-0">
+                  <div className="lb-group-label mb-1.5 px-3">{g.key}</div>
+                  <div className="space-y-0.5">{g.items.map(renderArticleItem)}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </aside>
@@ -244,6 +425,12 @@ export default function App() {
             background: 'color-mix(in srgb, var(--lb-bg-1) 72%, transparent)',
           }}
         >
+          <div
+            ref={progressRef}
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 h-[2px] w-full origin-left"
+            style={{ background: 'var(--lb-accent)', transform: 'scaleX(0)' }}
+          />
           <div className="mx-auto flex h-14 max-w-[1080px] items-center gap-3 px-6">
             <button
               onClick={() => setSidebarOpen((v) => !v)}
@@ -274,6 +461,101 @@ export default function App() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              <div className="relative" ref={favMenuRef}>
+                <button
+                  onClick={() => setFavMenuOpen((v) => !v)}
+                  title="我的收藏"
+                  aria-label="我的收藏"
+                  aria-expanded={favMenuOpen}
+                  className="t-btn relative flex h-9 w-9 items-center justify-center rounded-full"
+                >
+                  <BookmarkIcon filled={favMenuOpen || favorites.length > 0} className="h-[18px] w-[18px]" />
+                </button>
+                {favMenuOpen && (
+                  <div
+                    className="t-panel absolute right-0 top-11 z-50 w-[24rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-2xl"
+                    style={{
+                      background: 'var(--lb-surface-bg)',
+                      border: '1px solid var(--lb-border-soft)',
+                    }}
+                  >
+                    <div
+                      className="t-heading flex items-center gap-2 border-b px-5 py-3.5 text-[15px] font-semibold"
+                      style={{ borderColor: 'var(--lb-border-soft)' }}
+                    >
+                      <BookmarkIcon filled className="h-[15px] w-[15px]" />
+                      我的收藏
+                    </div>
+                    <div className="max-h-[28rem] overflow-y-auto p-2">
+                      {favoriteArticles.length === 0 ? (
+                        <div className="t-faint px-3 py-14 text-center text-xs leading-relaxed">
+                          还没有收藏的文章。
+                          <br />
+                          打开一篇文章，点击标题旁的心形即可收藏。
+                        </div>
+                      ) : (
+                        favoriteArticles.map((a) => {
+                          const active = a.id === currentId
+                          const hasWidget = a.blocks.some((b) => b.kind === 'widget')
+                          return (
+                            <div
+                              key={a.id}
+                              className={`group flex cursor-pointer items-start gap-3 rounded-xl px-3 py-3 transition-colors ${
+                                active ? '' : 'hover:bg-[var(--lb-hover)]'
+                              }`}
+                              style={active ? { background: 'var(--lb-hover)' } : undefined}
+                              onClick={() => {
+                                setCurrentId(a.id)
+                                setMode('read')
+                                setFavMenuOpen(false)
+                                collapseDrawer()
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                              }}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="t-strong line-clamp-2 text-[14px] font-semibold leading-snug">
+                                  {a.title || '无标题'}
+                                </div>
+                                {a.description && (
+                                  <div className="t-muted mt-1 line-clamp-2 text-[12.5px] leading-relaxed">
+                                    {a.description}
+                                  </div>
+                                )}
+                                <div className="lb-mono t-faint mt-2 flex flex-wrap items-center gap-x-2 text-[10.5px] tracking-[0.02em]">
+                                  <span>{isoDate(a)}</span>
+                                  <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                                  <span>{readingTime(a)} min</span>
+                                  <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                                  <span>{a.blocks.length} 段</span>
+                                  {hasWidget && (
+                                    <>
+                                      <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+                                      <span>含交互</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onToggleFavorite(a.id)
+                                }}
+                                title="取消收藏"
+                                aria-label="取消收藏"
+                                className="-mr-1 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--lb-faint)] opacity-0 transition-colors hover:bg-[var(--lb-bg-2)] hover:text-[var(--lb-text-strong)] group-hover:opacity-100"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                  <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <a
                 href="https://github.com/REBOOTERS/live-blog"
                 target="_blank"
@@ -286,23 +568,7 @@ export default function App() {
                   <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z" />
                 </svg>
               </a>
-              <button
-                onClick={toggleTheme}
-                title={theme === 'dark' ? '切换到日间模式' : '切换到夜间模式'}
-                aria-label="切换主题"
-                className="t-btn flex h-9 w-9 items-center justify-center rounded-full"
-              >
-                {theme === 'dark' ? (
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-                  </svg>
-                ) : (
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-                  </svg>
-                )}
-              </button>
+              <SettingsMenu />
               {mode === 'edit' ? (
                 <>
                   <button onClick={() => setMode('read')} className="t-btn rounded-full px-4 py-1.5 text-sm">
@@ -313,8 +579,16 @@ export default function App() {
                   </button>
                 </>
               ) : (
-                <button onClick={() => setMode('edit')} className="t-btn-primary rounded-full px-4 py-1.5 text-sm">
-                  编辑
+                <button
+                  onClick={() => setMode('edit')}
+                  title="编辑文章"
+                  aria-label="编辑文章"
+                  className="t-btn hidden h-9 w-9 items-center justify-center rounded-full sm:flex"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -322,11 +596,69 @@ export default function App() {
         </header>
 
         <main
-          className="mx-auto px-6 pb-28 pt-12 sm:pt-16"
-          style={{ maxWidth: mode === 'edit' ? '50rem' : '42rem' }}
+          className={`mx-auto px-6 pb-28 pt-12 sm:pt-16 ${
+            mode === 'edit'
+              ? 'max-w-[50rem]'
+              : 'max-w-[42rem] xl:max-w-[64rem]'
+          }`}
         >
           {mode === 'read' ? (
-            <ReadView article={current} older={older} newer={newer} onNavigate={navigate} />
+            <div className="xl:grid xl:grid-cols-[minmax(0,42rem)_200px] xl:gap-10">
+              <ReadView
+                article={current}
+                older={older}
+                newer={newer}
+                onNavigate={navigate}
+                isFavorite={favSet.has(current.id)}
+                onToggleFavorite={() => onToggleFavorite(current.id)}
+              />
+              {/* In-article TOC: standard markdown outline on the right of
+                  the article. Sticky to the viewport so it stays in view as
+                  you scroll. Only renders on xl+ screens (the layout needs
+                  ~64rem of room: 42rem article + 200px TOC + gap) and only
+                  when the current article actually has headings.
+
+                  The right column deliberately stretches to the full article
+                  height (default grid `align-items: stretch` — the previous
+                  `items-start` capped the column at the TOC's own height and
+                  killed the sticky range after a few screens). */}
+              {currentHeadings.length > 0 && (
+                <aside aria-label="本节目录" className="hidden xl:block">
+                  <nav className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+                    <div className="mb-2 flex items-center gap-2.5">
+                      <span className="lb-group-label">本页目录</span>
+                      <span className="h-px flex-1" style={{ background: 'var(--lb-border-soft)' }} />
+                    </div>
+                    <ul className="space-y-px">
+                      {currentHeadings.map((h) => {
+                        const isActive = h.id === activeHeadingId
+                        return (
+                          <li key={h.id}>
+                            <a
+                              href={`#${h.id}`}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                jumpToHeading(h.id)
+                              }}
+                              aria-current={isActive ? 'location' : undefined}
+                              className={`lb-toc-item block truncate py-1 text-[12.5px] leading-snug transition-colors ${
+                                h.level === 3 ? 'pl-4' : 'pl-2'
+                              } ${
+                                isActive
+                                  ? 'lb-toc-active t-strong font-medium'
+                                  : 't-muted hover:t-text'
+                              }`}
+                            >
+                              {h.text}
+                            </a>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </nav>
+                </aside>
+              )}
+            </div>
           ) : draft ? (
             <EditView
               draft={draft}
@@ -341,6 +673,10 @@ export default function App() {
       </div>
     </div>
   )
+}
+
+function isoDate(a: Article): string {
+  return (a.publishedAt || a.updatedAt).slice(0, 10)
 }
 
 function readingTime(a: Article): number {
@@ -361,17 +697,40 @@ function ReadView({
   older,
   newer,
   onNavigate,
+  isFavorite,
+  onToggleFavorite,
 }: {
   article: Article
   older?: Article
   newer?: Article
   onNavigate: (id: string) => void
+  isFavorite: boolean
+  onToggleFavorite: () => void
 }) {
   const hasWidget = article.blocks.some((b) => b.kind === 'widget')
+  // Exhibit numbering: widget blocks are cited as 图 01, 图 02 … in the order
+  // they appear, so prose and ledger can reference them like journal figures.
+  const figNoById = new Map<string, number>()
+  let figCount = 0
+  for (const b of article.blocks) {
+    if (b.kind === 'widget') figNoById.set(b.id, ++figCount)
+  }
+  // Exported videos are named 文章名-章节名-<widget>-<ts>; widgets before the
+  // first heading fall back to just the article title.
+  const sectionById = sectionTitleByBlockId(article)
   return (
-    <article>
-      <div className="t-faint mb-4 text-[12px] font-medium uppercase tracking-[0.18em]">
-        {hasWidget ? '交互式文章' : '文章'}
+    <article key={article.id} className="lb-enter">
+      <div className="mb-5 flex items-center justify-between">
+        <div className="lb-eyebrow">{hasWidget ? '交互式文章' : '文章'}</div>
+        <button
+          onClick={onToggleFavorite}
+          title={isFavorite ? '取消收藏' : '收藏文章'}
+          aria-label={isFavorite ? '取消收藏' : '收藏文章'}
+          aria-pressed={isFavorite}
+          className="t-btn flex h-9 w-9 items-center justify-center rounded-full"
+        >
+          <HeartIcon filled={isFavorite} className="h-[18px] w-[18px]" />
+        </button>
       </div>
       <h1
         className="t-heading text-[1.875rem] font-semibold leading-[1.15] tracking-[-0.022em] sm:text-[2.125rem] md:text-[2.25rem]"
@@ -384,17 +743,27 @@ function ReadView({
           {article.description}
         </p>
       )}
-      <div className="t-faint mt-6 flex flex-wrap items-center gap-x-3 text-[13px]">
-        <span className="t-muted">{new Date(article.publishedAt || article.updatedAt).toLocaleDateString()}</span>
-        <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
-        <span>{article.blocks.length} 个段落</span>
-        <span className="h-[3px] w-[3px] rounded-full" style={{ background: 'var(--lb-faint)' }} />
+      <div className="lb-ledger mt-8">
+        <span className="t-muted">{isoDate(article)}</span>
+        <span className="lb-ledger-sep" aria-hidden="true" />
         <span>{readingTime(article)} 分钟阅读</span>
+        <span className="lb-ledger-sep" aria-hidden="true" />
+        <span>{article.blocks.length} 个段落</span>
+        {figCount > 0 && (
+          <>
+            <span className="lb-ledger-sep" aria-hidden="true" />
+            <span>图 {figCount} 幅</span>
+          </>
+        )}
       </div>
-      <div className="my-10 h-px" style={{ background: 'var(--lb-border-soft)' }} />
-      <div>
+      <div className="mt-10">
         {article.blocks.map((b) => (
-          <BlockRenderer key={b.id} block={b} />
+          <BlockRenderer
+            key={b.id}
+            block={b}
+            figNo={figNoById.get(b.id)}
+            exportPrefix={[article.title, sectionById.get(b.id)].filter(Boolean).join('-')}
+          />
         ))}
       </div>
 
@@ -406,10 +775,10 @@ function ReadView({
           {older ? (
             <button
               onClick={() => onNavigate(older.id)}
-              className="group flex flex-col items-start gap-1 rounded-2xl border p-4 text-left transition-colors hover:bg-[var(--lb-hover)]"
+              className="group flex flex-col items-start gap-1.5 rounded-2xl border p-4 text-left transition-colors hover:bg-[var(--lb-hover)]"
               style={{ borderColor: 'var(--lb-border-soft)' }}
             >
-              <span className="t-faint text-xs">← 上一篇</span>
+              <span className="lb-mono t-faint text-[11px] tracking-[0.12em]">← 上一篇</span>
               <span className="t-strong line-clamp-1 text-sm font-medium">
                 {older.title || '无标题'}
               </span>
@@ -420,10 +789,10 @@ function ReadView({
           {newer ? (
             <button
               onClick={() => onNavigate(newer.id)}
-              className="group flex flex-col items-end gap-1 rounded-2xl border p-4 text-right transition-colors hover:bg-[var(--lb-hover)]"
+              className="group flex flex-col items-end gap-1.5 rounded-2xl border p-4 text-right transition-colors hover:bg-[var(--lb-hover)]"
               style={{ borderColor: 'var(--lb-border-soft)' }}
             >
-              <span className="t-faint text-xs">下一篇 →</span>
+              <span className="lb-mono t-faint text-[11px] tracking-[0.12em]">下一篇 →</span>
               <span className="t-strong line-clamp-1 text-sm font-medium">
                 {newer.title || '无标题'}
               </span>
@@ -434,6 +803,40 @@ function ReadView({
         </nav>
       )}
     </article>
+  )
+}
+
+function HeartIcon({ filled, className }: { filled: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? 'var(--lb-accent)' : 'none'}
+      stroke={filled ? 'var(--lb-accent)' : 'currentColor'}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  )
+}
+
+function BookmarkIcon({ filled, className }: { filled: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? 'var(--lb-accent)' : 'none'}
+      stroke={filled ? 'var(--lb-accent)' : 'currentColor'}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
   )
 }
 

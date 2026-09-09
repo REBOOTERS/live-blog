@@ -1,8 +1,8 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v13'
-const LEGACY_KEY = 'liveblog:articles:v12'
+const KEY = 'liveblog:articles:v21'
+const LEGACY_KEY = 'liveblog:articles:v20'
 
 export function loadArticles(): Article[] {
   try {
@@ -20,7 +20,7 @@ export function loadArticles(): Article[] {
 }
 
 /**
- * v12 → v13 migration. Refreshes built-in demo articles from the latest seed
+ * v20 → v21 migration. Refreshes built-in demo articles from the latest seed
  * (picking up new articles / text updates) while preserving user-created
  * articles. User articles backfill publishedAt from their existing timestamp.
  */
@@ -83,4 +83,31 @@ export function deleteArticle(id: string): Article[] {
   }
   saveArticles(all)
   return all
+}
+
+const FAV_KEY = 'liveblog:favorites:v1'
+
+export function loadFavorites(): string[] {
+  try {
+    const raw = localStorage.getItem(FAV_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((x): x is string => typeof x === 'string')
+  } catch {
+    return []
+  }
+}
+
+export function saveFavorites(ids: string[]): void {
+  localStorage.setItem(FAV_KEY, JSON.stringify(ids))
+}
+
+export function toggleFavorite(id: string): string[] {
+  const next = loadFavorites()
+  const i = next.indexOf(id)
+  if (i >= 0) next.splice(i, 1)
+  else next.push(id)
+  saveFavorites(next)
+  return next
 }

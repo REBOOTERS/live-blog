@@ -532,5 +532,6 @@ export const PipWidget: WidgetDefinition<PipProps> = {
     },
     { key: 'autoStart', label: '加载后自动进入画中画', type: 'checkbox' },
   ],
+  exportable: true,
   Component: Pip,
 }

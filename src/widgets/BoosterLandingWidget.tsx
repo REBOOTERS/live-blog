@@ -504,5 +504,6 @@ export const BoosterLandingWidget: WidgetDefinition<BoosterLandingProps> = {
     auto: false,
   },
   configSchema: [{ key: 'auto', label: '默认自动制导', type: 'checkbox' }],
+  exportable: true,
   Component: BoosterLanding,
 }

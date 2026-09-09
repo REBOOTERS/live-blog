@@ -384,5 +384,6 @@ export const TransformerWidget: WidgetDefinition<TransformerProps> = {
     { key: 'sentenceId', label: '例句', type: 'range', min: 0, max: 2, step: 1 },
     { key: 'usePosition', label: '位置编码', type: 'checkbox' },
   ],
+  exportable: true,
   Component: SelfAttention,
 }

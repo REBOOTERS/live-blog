@@ -199,5 +199,6 @@ export const PendulumWidget: WidgetDefinition<PendulumProps> = {
     { key: 'initialAngle', label: '初始角度', type: 'range', min: -1.4, max: 1.4, step: 0.05, unit: 'rad' },
     { key: 'showEnergy', label: '显示能量信息', type: 'checkbox' },
   ],
+  exportable: true,
   Component: Pendulum,
 }
