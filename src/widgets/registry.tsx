@@ -26,6 +26,9 @@ import { VideoPatchWidget } from './VideoPatchWidget'
 import { WaveCancelWidget } from './WaveCancelWidget'
 import { AncDelayWidget } from './AncDelayWidget'
 import { AncLmsWidget } from './AncLmsWidget'
+import { DctBasisWidget } from './DctBasisWidget'
+import { DctBlockWidget } from './DctBlockWidget'
+import { JpegQualityWidget } from './JpegQualityWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -87,6 +90,9 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'wave-cancel': WaveCancelWidget,
   'anc-delay': AncDelayWidget,
   'anc-lms': AncLmsWidget,
+  'dct-basis': DctBasisWidget,
+  'dct-block': DctBlockWidget,
+  'jpeg-quality': JpegQualityWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {

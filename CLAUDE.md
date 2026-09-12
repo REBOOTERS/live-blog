@@ -23,9 +23,9 @@ npm run preview    # 预览生产构建
 
 定义在 `src/types.ts`：`Block`（`text` 含 Markdown / `widget` 含 type+props）+ `Article`（`id` / `title` / `description` / `publishedAt` / `updatedAt` / `blocks`）。
 
-- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v21`；修改数据结构或 seed 内容时记得升版本号并把上一版 key 作为 `LEGACY_KEY`。迁移会非破坏性地把内置 demo 文章刷新为最新 seed、追加新 demo、并保留用户自建文章。v7 迁移新增 `publishedAt`：内置 demo 用 seed 里的固定发布日期，用户自建文章回填其 `updatedAt`；其后 v8～v21 迁移仅刷新 seed、追加新 demo）。
+- 文章持久化在 `localStorage`（`src/storage.ts`，当前 key 为 `liveblog:articles:v22`；修改数据结构或 seed 内容时记得升版本号并把上一版 key 作为 `LEGACY_KEY`。迁移会非破坏性地把内置 demo 文章刷新为最新 seed、追加新 demo、并保留用户自建文章。v7 迁移新增 `publishedAt`：内置 demo 用 seed 里的固定发布日期，用户自建文章回填其 `updatedAt`；其后 v8～v22 迁移仅刷新 seed、追加新 demo）。
 - `Block.id` 由 `src/lib/id.ts` 的 `uid(prefix)` 生成；示例文章使用稳定 id（`art-pendulum` 等）。
-- 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回十八篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体 / 傅里叶 / 矩阵 / 反向传播 / 三原色混色 / 声波 / Transformer / BFS-DFS / Token 计算 / 空气动力学 / 视频滤镜 / 画中画 / AI 文本水印 / 视频生成模型 / 降噪耳机，每个知识点一篇）。
+- 首次打开（或存储为空）时写入 `seed.ts` 的 `seedArticles()`，目前返回十九篇独立示例文章（单摆 / 贝塞尔 / 排序 / 抛体 / 傅里叶 / 矩阵 / 反向传播 / 三原色混色 / 声波 / Transformer / BFS-DFS / Token 计算 / 空气动力学 / 视频滤镜 / 画中画 / AI 文本水印 / 视频生成模型 / 降噪耳机 / 图片压缩，每个知识点一篇）。
 
 ## 核心架构模式
 
@@ -95,7 +95,7 @@ npm run preview    # 预览生产构建
 - **2026-08-09 视觉改版为高级博客风**：默认改为浅色编辑型主题（Apple 官网风），夜间模式仍在（顶栏右上角切换；无手动选择时跟随系统 `prefers-color-scheme`，见 `index.html` 预涂脚本与 `src/lib/theme.ts`）。去掉了霓虹辉光/网格底纹/渐变分隔线/发光徽章；主色统一为单一蓝；文章标题用衬线字体；圆角更大（胶囊按钮、12–16px 卡片）。**关键：`.lb-surface` 与全部 11 个 Widget 画布都跟随主题**——`palette()`（`src/lib/canvas.ts`）按 `data-theme` 返回浅/深两套语义色，所有 Widget 经 `useTheme()` 在切主题时重绘；硬编码的青/靛深色值已全部替换为 `palette()` 取值（唯一例外是 ColorWidget 混色画布，其背景由加/减色物理模式决定）。代码块仍保留深色窗口栏（但去掉了红黄绿圆点）。新增 UI 请遵循上面的「整体为浅色编辑型高级博客主题」「画布配色约定」两条。
 
 - 所有可拖拽 Widget（单摆/贝塞尔/抛体/傅里叶/矩阵/三原色）统一使用 React 指针事件 + `setPointerCapture`，不要回退到 `window.addEventListener`。
-- 内置示例共十八篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历、大模型 Token 计算、空气动力学（翼型升力/火箭发射/助推器回收三个 Widget）、视频滤镜（点运算 + 卷积）、画中画（视频 PiP vs 文档 PiP）、AI 文本水印（水印骰子/密钥计数/编辑深度三个 Widget）、视频生成模型（帧间一致性猫/压缩账本/时空补丁三个 Widget，一致性猫与补丁各出现两次切不同预设）、降噪耳机（波的相消干涉/延迟与频率/LMS 自适应三个 Widget，另复用声波 Widget 讲声波基础）。localStorage key 已升至 `v21`，迁移逻辑见 `storage.ts`。内置 demo 各有一个固定发布日期（`seed.ts` 的 `RELEASE_DATES`），文章列表按 `publishedAt` 倒序排列。
+- 内置示例共十九篇，每个知识点一篇：单摆、贝塞尔、排序、抛体、傅里叶变换、矩阵变换、反向传播、三原色混色、声波与频率、Transformer 自注意力、BFS/DFS 图遍历、大模型 Token 计算、空气动力学（翼型升力/火箭发射/助推器回收三个 Widget）、视频滤镜（点运算 + 卷积）、画中画（视频 PiP vs 文档 PiP）、AI 文本水印（水印骰子/密钥计数/编辑深度三个 Widget）、视频生成模型（帧间一致性猫/压缩账本/时空补丁三个 Widget，一致性猫与补丁各出现两次切不同预设）、降噪耳机（波的相消干涉/延迟与频率/LMS 自适应三个 Widget，另复用声波 Widget 讲声波基础）、图片压缩（DCT 基底/8×8 频域账本/JPEG 质量滑块三个 Widget，DCT 基底与频域账本各出现两次切不同预设，共享 `src/lib/dct.ts` 数学库）。localStorage key 已升至 `v22`，迁移逻辑见 `storage.ts`。内置 demo 各有一个固定发布日期（`seed.ts` 的 `RELEASE_DATES`），文章列表按 `publishedAt` 倒序排列。
 - **文章写作风格（对标 john.fun/elevators，2026-08-16 起）**：段落 1–3 句一个观点，不写教科书长块；同一 Widget 在一篇文章中多次出现，每次只解锁一个新视角（切 prop 预设、用不同段落引导看不同的东西）；先建立「度量工具/账本」再用它评判对比；用具体数字做锚点（276 次比较、8 分钟 vs 0.03 秒）；反直觉结论做高潮；结尾轻快呼应开头，不写「动手实验」式清单和总结段。首篇范例：`seed.ts` 的排序文章。
 
 ## 不做的事（避免误解范围）
