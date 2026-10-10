@@ -30,6 +30,7 @@ import { DctBasisWidget } from './DctBasisWidget'
 import { DctBlockWidget } from './DctBlockWidget'
 import { JpegQualityWidget } from './JpegQualityWidget'
 import { OpusSessionWidget } from './OpusSessionWidget'
+import { AgentLoopWidget } from './AgentLoopWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -95,6 +96,7 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'dct-block': DctBlockWidget,
   'jpeg-quality': JpegQualityWidget,
   'opus-session': OpusSessionWidget,
+  'agent-loop': AgentLoopWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {
