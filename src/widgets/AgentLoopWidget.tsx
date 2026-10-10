@@ -441,6 +441,18 @@ function foldText(snap: CallSnap): string {
   return ` 发出前把${names}收成 1,200 token 摘要，那些原文不在了。`
 }
 
+function axisMax(sim: AgentSim): number {
+  let maxInput = 0
+  for (const snap of [...sim.parent, ...sim.child]) {
+    if (snap.stop !== 'skipped' && snap.input > maxInput) maxInput = snap.input
+  }
+  if (maxInput >= sim.window * 0.45) return sim.window
+  if (maxInput <= 20_000) return 20_000
+  if (maxInput <= 50_000) return 50_000
+  if (maxInput <= 100_000) return 100_000
+  return sim.window
+}
+
 function draw(
   ctx: CanvasRenderingContext2D,
   P: CanvasPalette,
@@ -452,6 +464,8 @@ function draw(
   ctx.fillStyle = P.bg
   ctx.fillRect(0, 0, W, H)
 
+  const yMax = axisMax(sim)
+
   ctx.fillStyle = P.text
   ctx.font = '13px ui-sans-serif, system-ui, sans-serif'
   ctx.textAlign = 'left'
@@ -461,16 +475,20 @@ function draw(
   ctx.font = '11px ui-sans-serif, system-ui, sans-serif'
   ctx.textAlign = 'right'
   const total = sim.parentReads + sim.childReads
-  ctx.fillText(`累计读取 ${formatToken(total)}`, W - 16, 26)
+  ctx.fillText(`累计读取 ${formatToken(total)}`, W - 16, 22)
+  if (yMax < sim.window) {
+    ctx.fillStyle = P.faint
+    ctx.fillText(`纵轴 ${formatWan(yMax)}，窗口在图外`, W - 16, 38)
+  }
 
   const childOn = sim.child.length > 0
-  drawChart(ctx, P, sim.parent, sim.window, compactAt, focusKey, 'parent', 48, childOn ? 150 : 250)
+  drawChart(ctx, P, sim.parent, yMax, compactAt, focusKey, 'parent', 48, childOn ? 150 : 250)
   if (childOn) {
     ctx.fillStyle = P.muted
     ctx.font = '11px ui-sans-serif, system-ui, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText('子代理自己的上下文，不进父记录', 16, 236)
-    drawChart(ctx, P, sim.child, sim.window, compactAt, focusKey, 'child', 248, 112)
+    drawChart(ctx, P, sim.child, yMax, compactAt, focusKey, 'child', 248, 112)
   } else {
     ctx.fillStyle = P.faint
     ctx.font = '12px ui-sans-serif, system-ui, sans-serif'
@@ -489,7 +507,7 @@ function drawChart(
   ctx: CanvasRenderingContext2D,
   P: CanvasPalette,
   snaps: CallSnap[],
-  window: number,
+  yMax: number,
   compactAt: number,
   focusKey: string,
   who: 'parent' | 'child',
@@ -512,11 +530,11 @@ function drawChart(
     ctx.moveTo(x, y)
     ctx.lineTo(x + width, y)
     ctx.stroke()
-    ctx.fillText(frac === 0 ? '0' : formatWan(window * frac), x - 4, y + 3)
+    ctx.fillText(frac === 0 ? '0' : formatWan(yMax * frac), x - 4, y + 3)
   }
 
-  if (compactAt > 0 && compactAt < window) {
-    const y = top + height - (compactAt / window) * height
+  if (compactAt > 0 && compactAt < yMax) {
+    const y = top + height - (compactAt / yMax) * height
     ctx.strokeStyle = P.warn
     ctx.setLineDash([3, 3])
     ctx.beginPath()
@@ -531,7 +549,7 @@ function drawChart(
   const barW = Math.min(36, (width - gap * (n + 1)) / n)
   snaps.forEach((snap, i) => {
     const bx = x + gap + i * ((width - gap) / n)
-    const ratio = snap.stop === 'skipped' || window === 0 ? 0 : Math.min(1, snap.input / window)
+    const ratio = snap.stop === 'skipped' || yMax === 0 ? 0 : Math.min(1, snap.input / yMax)
     const bh = ratio * (height - 18)
     const by = top + height - bh
     const key = `${who}-${snap.index}`
