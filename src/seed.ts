@@ -27,6 +27,7 @@ const RELEASE_DATES: Record<string, string> = {
   'art-video-gen': '2026-08-31T09:00:00.000Z',
   'art-anc': '2026-09-08T09:00:00.000Z',
   'art-image-compression': '2026-09-12T09:00:00.000Z',
+  'art-opus-55': '2026-10-10T09:00:00.000Z',
 }
 
 // Each knowledge point is its own article. New articles should follow the same
@@ -2379,6 +2380,101 @@ function imageCompressionArticle(): Omit<Article, 'publishedAt'> {
   }
 }
 
+function opusArticle(): Omit<Article, 'publishedAt'> {
+  return {
+    id: 'art-opus-55',
+    title: 'Opus 5.5：关不掉的思考，和一张按缓存计价的账单',
+    description: '2026 年 9 月 22 日的 Claude Opus 5.5。拖一轮工具调用的账本，看思考、上下文和缓存各自卡在哪。',
+    updatedAt: now(),
+    blocks: [
+      {
+        id: 'op-t1',
+        kind: 'text',
+        content:
+          '2026 年 9 月 22 日，Anthropic 发布 Claude Opus 5.5，API 里的名字是 `claude-opus-5-5`。它是 Claude 5.5 这一族的第一个，模型页上的定位是长时间的编程代理和知识工作。\n\n发布稿写得很满：大多数工作上达到 Fable 5.1 的水平，默认设置下比 Opus 5 便宜大约 40%，输出快 30% 以上。这些是他们自己的测试。同一篇稿子也写了，到了这个能力，榜上的分差越来越不能代表真实使用；他们内部用下来，和 Fable 5.1 的差距比分数看起来更窄。\n\n这篇不重放那张榜。值得亲手算的是一次代理会话的钱花在哪：同一段上下文被反复读回来，思考占着输出额度，还占着下一轮的窗口。',
+      },
+      {
+        id: 'op-t2',
+        kind: 'text',
+        content:
+          '## 先把墙和价对齐\n\n能核对的规格，价格都是每百万 token。\n\n| | 上下文 | 输出上限 | 输入 | 输出 | 缓存读取 |\n|---|---|---|---|---|---|\n| Opus 4.5 | 20 万 | 6.4 万 | 5 美元 | 25 美元 | — |\n| Opus 5 | 100 万 | 12.8 万 | 5 美元 | 25 美元 | 0.50 美元 |\n| **Opus 5.5** | **100 万** | **12.8 万** | **4 美元** | **20 美元** | **0.20 美元** |\n| Sonnet 5.5 | 100 万 | 12.8 万 | 2 美元 | 10 美元 | 0.10 美元 |\n\nOpus 4.5 仍在，文档建议迁到 5.5。它的思考是手动预算，默认 effort 是 high，知识截止 2025 年 5 月。它的缓存价我没有放进表里：后面的账本只使用我核对过的写入价和读取价，4.5 在图上只充当两道墙，20 万和 6.4 万。\n\n100 万这扇窗不是 5.5 新开的。上下文文档把 Opus 4.6、4.7、4.8 和 Opus 5 都列在 100 万里。5.5 的同步输出上限仍是 12.8 万。Batch API 带 beta 头 `output-300k-2026-03-24` 可以到 30 万，那是另一扇门，账本不走那里。\n\n当前分词器从 Opus 4.7 开始用。文档的换算：100 万 token 大约 55.5 万个词，或 250 万个 Unicode 字符。更早的分词器大约是 75 万个词装满 100 万 token；文档另说 20 万 token 大约 15 万词，那是旧比例。两套换算不要乘在一起。',
+      },
+      {
+        id: 'op-t3',
+        kind: 'text',
+        content:
+          '## 和 Opus 5、Sonnet 差在哪\n\nOpus 5 的窗口和输出上限已经是 100 万 / 12.8 万。发布稿的对照表里，它的缓存写入是 6.25 美元，和 Opus 5.5 的 5 美元写在同一行。更新说明写明这 5 美元是 5 分钟写入；1 小时写入是 8 美元。Opus 5 有没有单独的 1 小时价，那张表没写，下面的账本就用 6.25 美元。\n\nOpus 5 默认 effort 是 high。high 及以下还接受把思考关掉；xhigh 和 max 不行。Opus 5.5 把这个开关拿掉了：`thinking: {"type":"disabled"}` 或者手动 `budget_tokens`，每一档 effort 都返回 400。要调节，用 `output_config.effort`。省略 effort 时，5.5 走 medium，比 Opus 5 的默认低一档。知识截止是 2026 年 6 月。今天是 10 月 10 日，它没读过这篇。\n\n输入和输出各降 20%（5→4 美元，25→20 美元）。缓存读取从 0.50 美元降到 0.20 美元，降了 60%，是输入价的 5%。所以 1 个输出 token 在 Opus 5 上等于 50 个缓存读取，在 5.5 上等于 100 个。少生成、多复用缓存，比在 Opus 5 上更划算。\n\nSonnet 5.5 晚六天，9 月 28 日。窗口和输出上限与 Opus 5.5 相同，输入 2 美元、输出 10 美元，默认 effort 是 high。发布稿里缓存读取写的是 0.20 美元；今天的模型页是 0.10 美元，5 分钟写入 2.50 美元，1 小时 4 美元。思考的开关也不一样：Sonnet 用 `between_tools` 关掉开口之前的思考，low 到 high 可以，xhigh 和 max 会 400。所以「5.5」不是统一的思考政策。\n\n模型总览里还有 Haiku 5.5，起步价写着 from 0.10 / 0.50 美元，默认 effort 也是 medium。它的发布日这篇不拿来当情节。',
+      },
+      {
+        id: 'op-t4',
+        kind: 'text',
+        content:
+          '## 一轮工具调用值多少钱\n\n代理会话可以收成一张很短的账。第 $r$ 轮读到的上下文是 $K_{r-1}$，其中新写进缓存的是 $F_r$，思考 $H$ 和可见回复 $A$ 按输出计费：\n\n$$\n\\begin{aligned}\nB_r &= p_{\\mathrm{read}}\\,K_{r-1} + p_{\\mathrm{write}}\\,F_r + p_{\\mathrm{out}}\\,(H+A) \\\\\nK_r &= K_{r-1} + F_r\n\\end{aligned}\n$$\n\n第一轮还没有缓存，$K_0 = 0$，$F_1 = C_0$，读取那一项是 0。从第二轮起，$F_r = H + A + U$，$U$ 是工具结果。思考、回复、工具结果都留在下一轮里。文档说，Opus 4.5 及之后的 Opus 默认保留思考块，并且像别的输入一样计入窗口。\n\n$H+A$ 同时受 `max_tokens` 约束。同步接口的硬顶是 12.8 万。思考内容按默认 `display: "omitted"` 不返回给你，额度照扣。\n\n用手算一笔，数字就是下面那本账的初始旋钮。$C_0 = 100{,}000$，$H = 2{,}000$，$A = 1{,}000$，$U = 4{,}000$，两轮，Opus 5.5 的 5 分钟价。\n\n第一轮：写入 $5 \\times 0.1 = 0.50$ 美元，输出 $20 \\times 0.003 = 0.06$ 美元，合计 **0.56 美元**。同一轮如果不缓存、按输入价 4 美元计，前缀只要 0.40 美元，加上输出仍是 0.46 美元。**第一轮缓存更贵**，因为写入价 5 美元高于输入价 4 美元。\n\n第二轮：10 万按 0.20 美元读回来，是 0.02 美元。新增加的 7,000 token 按 5 美元写入，是 0.035 美元。输出又是 0.06 美元。这一轮 0.115 美元，两轮累计 **0.675 美元**。不缓存的第二轮要把 107,000 token 按 4 美元重读，光输入就是 0.428 美元，两轮累计 0.948 美元。\n\nOpus 5 用同一组 token、发布稿上的价：两轮累计 0.86875 美元。Sonnet 5.5 用模型页上的 0.10 / 2.50 / 10 美元：两轮累计 0.3375 美元。\n\n先别拖。对一下屏幕上的三个累计数。',
+      },
+      {
+        id: 'op-w1',
+        kind: 'widget',
+        type: 'opus-session',
+        props: { effort: 'medium', rounds: 2, contextK: 100, toolK: 4, thinkK: 2, replyK: 1 },
+      },
+      {
+        id: 'op-t5',
+        kind: 'text',
+        content:
+          '## 拖之前，先看三处读数\n\nOpus 5.5 应该是 0.675 美元，Opus 5 是 0.86875 美元，Sonnet 5.5 是 0.3375 美元。第一轮那一格是 0.56 美元。对不上，就说明这本账和上面的假设不是同一套。\n\n缓存读取占比现在只有 3% 上下。这不矛盾：两轮的大头仍是第一笔写入和两笔输出。Anthropic 说真实编程会话里，缓存读取已经是账单的大头。那是他们流量的形状。这组旋钮还不是。\n\n输出价是读取价的 100 倍。1 个输出 token 抵 100 个缓存读取。把轮次拖到 20，虚线（完全不缓存、每轮按 4 美元重读）会把实线甩开——缓存从第二轮才开始赚，轮次一长，第一轮多付的那 0.10 美元就被后来的读取价摊掉。读取占比会爬，但只要每轮还在写出几千 token，它不一定过半。把思考和回复压到最小、起始上下文拖过 40 万、轮次拖过 30，再看那个百分比。\n\n20 万那条虚线是 Opus 4.5 的整扇窗。这组 10 万起步要很多轮才撞上。把起始上下文拖过 20 万：4.5 的那句说明变红，5.5 还在 100 万的窗里。窗大了五倍这件事，不要记在 5.5 头上。',
+      },
+      {
+        id: 'op-t6',
+        kind: 'text',
+        content:
+          '## 关掉思考，和把思考设成 0\n\n把思考滑块拉到 0。账单会变小，请求仍可发出。这只是你假设这一轮没有产生思考 token。\n\n再点「尝试关闭思考」。这是另一个动作：请求里写了 `thinking.type.disabled`。Opus 5.5 返回 400 `invalid_request_error`，账单归零，因为请求没有执行。错误文本是：这个模型不支持 disabled，改用 adaptive，再用 effort 调节。手动 `budget_tokens` 同样 400。\n\nOpus 5 在 high 及以下还收「关掉」。5.5 在 low 到 max 每一档都拒。',
+      },
+      {
+        id: 'op-t7',
+        kind: 'text',
+        content:
+          '## effort 不是折扣旋钮\n\n五档：low、medium、high、xhigh、max。它管的是模型愿意花多少 token 把整段回复做完；自适应思考打开时，也包括想得多勤、想多深。文档写明它是行为信号，不是严格的 token 预算。低档遇到够难的题仍会想，只是比高档少。\n\n所以思考滑块不跟着 effort 跳。没有公布过的式子写着 medium 等于 2,000 token。滑块是你的假设，账本只负责定价，并卡住两道墙。\n\nAnthropic 的测试里，Opus 5.5 的 medium 在编程和知识工作评测上达到或超过 Opus 5 的 high；若干编程评测上，low 接近那个水平，成本低得多。他们没给统一倍率。换模型要重跑自己的评测，不要把旧的 effort 原样带过来。同一档上，5.5 每轮想的往往比 Opus 5 多，xhigh 和 max 尤其明显。\n\n改顶层 effort 会让提示缓存失效。改某一条消息上的 effort（beta，per-message `output_config`）不会，缓存还在。点「最后一轮改顶层 effort」：那一轮的整段上下文按写入价重计一次，图上应出现一个尖刺。这不是质量曲线，是价目表。',
+      },
+      {
+        id: 'op-t8',
+        kind: 'text',
+        content:
+          '## 思考会把窗吃掉\n\n下面换一组旋钮。起始上下文 18 万，每轮思考 1,000、回复 500、工具结果 2,000，共 24 轮。每一轮窗口增加 3,500 token。\n\n第 6 轮的输入是 $180{,}000 + 5 \\times 3{,}500 = 197{,}500$，Opus 4.5 还收得下。第 7 轮是 201,000，它从这里拒收。把轮次拖回 6，那句红字应该消失。\n\n再把思考从 1,000 拖到 40,000，轮次先保持不动。上下文的涨速里，工具结果不再是大头。思考块留在后续轮次里，下一轮按缓存读取再付一次，再下一轮又付一次。这和「思考只是隐藏草稿纸、不占窗口」相反。\n\n输出墙在另一头。思考加回复超过 128,000，这一轮发不出去。拖过右端就能看见。Opus 4.5 的输出墙更近，在 64,000：哪怕上下文还在 20 万以内，输出过了 6.4 万，它也放不下。',
+      },
+      {
+        id: 'op-w2',
+        kind: 'widget',
+        type: 'opus-session',
+        props: { effort: 'high', rounds: 24, contextK: 180, toolK: 2, thinkK: 1, replyK: 0.5 },
+      },
+      {
+        id: 'op-t9',
+        kind: 'text',
+        content:
+          '## 另外三扇会撞上的门\n\n强制调用工具：`tool_choice` 设成 `any`，或指定某一个工具，返回 400。`auto` 和 `none` 可以。想让它一定去调工具，写进提示里，或者用 strict 把参数钉在 schema 上。\n\n电脑使用：Claude API 和 Google Cloud 上，旧的 `computer_20251124` 不收，要换成 `computer_toolset_20260801`。更新说明写明 Amazon Bedrock 上旧工具还能用。其他平台这篇没有逐家核完。\n\n思考块绑在模型和这段对话上。Opus 5.5 读得了 Opus 5，以及更早的 Opus、Sonnet、Haiku 的思考块；在 Claude API 和 Google Cloud 上，也读得了 Sonnet 5.5 和 Haiku 5.5 的。读不了 Fable 和 Mythos 的。反过来，Claude API 上 Fable 5.1 和 Mythos 5.1 读得了 5.5 的思考块，其他模型不行。目标模型读不了的块会被丢掉，请求仍然成功，丢掉的块不计费。\n\n2026 年 8 月 31 日 0 时（UTC）及之后开的账号，默认还检查一件事：思考块产生之后，它前面的 system、tools 或更早的消息有没有被改过。改过就 400。这和 Fable 5.1 是同一套。对话保持只追加，这个问题不会出现。\n\n工具调用之间那段话，现在进 thinking 块。默认 display 是 omitted，那段是空的。界面若把工具之间的文字当进度，会忽然安静，而且没有报错。',
+      },
+      {
+        id: 'op-t10',
+        kind: 'text',
+        content:
+          '## 40% 里，账本只算得出一半\n\n发布稿说，默认设置下，典型工作负载比 Opus 5 便宜大约 40%。两个原因叠在一起：每个 token 更便宜，每个任务用的 token 更少。这本账只能演示前一半。后一半没有公开的公式。\n\n他们举过一个内部例子：把 HAProxy 从 C 译成 Rust，Opus 5.5 用了 9.5 小时，Fable 5.1 用了 12 小时，费用少 51%。滑块假装不了「它少想了多少」。你只能把自己测到的思考 token 填进来，看墙和价怎么接住它。\n\n还有一个更快的档。发布稿说 Fast mode 最高约 2.5 倍速度，在 Claude Code 和 Claude Platform 上提供，输入 8 美元、输出 40 美元。更新说明写的是研究预览，只在 Claude API，用 `speed: "fast"` 和 beta 头 `fast-mode-2026-02-01`，并且不在 Bedrock、Claude Platform on AWS、Google Cloud、Microsoft Foundry 上。「Claude Platform」和「Claude Platform on AWS」不是同一个名字，两处措辞不完全一样，这里两句都记下。\n\n需要数据留在美国时，产品页写了 US-only inference，输入和输出是 1.1 倍价。账本没乘这个系数。',
+      },
+      {
+        id: 'op-t11',
+        kind: 'text',
+        content:
+          '回到 9 月 22 日那份发布稿。榜上的数字会过期，价目表也会改——Sonnet 5.5 的缓存读取，发布稿是 0.20 美元，今天的模型页是 0.10 美元。\n\n不会跟着改掉的是这三道墙的形状。输出额度把思考和回复算在一起。上下文是一轮一轮把思考、回复、工具结果叠上去的。还有一只从 Opus 5 手里拿掉的开关。下次有人说换上 Opus 5.5 就好了，可以先问他把 effort 设在哪一档、缓存还在不在、以及那 12.8 万里给思考留了多少。',
+      },
+      {
+        id: 'op-t12',
+        kind: 'text',
+        content:
+          '---\n\n**来源**：Anthropic《Introducing Claude Opus 5.5》（2026-09-22）·《Introducing Claude Sonnet 5.5》（2026-09-28）· Claude 文档：Opus 5.5 模型页、What\'s new in Claude Opus 5.5、Effort、Prompting Claude Opus 5.5、Context windows、Sonnet 5.5 模型页、Opus 4.5 模型页。查阅日期 2026-10-10。\n\n给专业人士：账本是教学模型。它假设每一轮的思考、回复、工具结果一样长；前缀不少于 512 token 时整段按 5 分钟缓存写入；Opus 5 使用发布稿里的单一缓存写入价 6.25 美元。1 小时写入、Batch 半价、Fast mode、US-only 的 1.1 倍，都不在滑块里。effort 不改变任何 token 数。完全不缓存的虚线按输入价重读整段上下文，用来对照缓存从第二轮才开始赚。',
+      },
+    ],
+  }
+}
+
 export function seedArticles(): Article[] {
   return [
     pendulumArticle(),
@@ -2400,5 +2496,6 @@ export function seedArticles(): Article[] {
     videoGenArticle(),
     ancArticle(),
     imageCompressionArticle(),
+    opusArticle(),
   ].map((a) => ({ ...a, publishedAt: RELEASE_DATES[a.id] ?? a.updatedAt }))
 }

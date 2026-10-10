@@ -1,8 +1,8 @@
 import type { Article } from './types'
 import { seedArticles } from './seed'
 
-const KEY = 'liveblog:articles:v22'
-const LEGACY_KEY = 'liveblog:articles:v21'
+const KEY = 'liveblog:articles:v23'
+const LEGACY_KEY = 'liveblog:articles:v22'
 
 export function loadArticles(): Article[] {
   try {
@@ -20,7 +20,7 @@ export function loadArticles(): Article[] {
 }
 
 /**
- * v21 → v22 migration. Refreshes built-in demo articles from the latest seed
+ * v22 → v23 migration. Refreshes built-in demo articles from the latest seed
  * (picking up new articles / text updates) while preserving user-created
  * articles. User articles backfill publishedAt from their existing timestamp.
  */
