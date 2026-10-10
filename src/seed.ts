@@ -29,6 +29,7 @@ const RELEASE_DATES: Record<string, string> = {
   'art-image-compression': '2026-09-12T09:00:00.000Z',
   'art-opus-55': '2026-10-10T09:00:00.000Z',
   'art-agent-loop': '2026-10-10T12:00:00.000Z',
+  'art-image-gen': '2026-10-10T15:00:00.000Z',
 }
 
 // Each knowledge point is its own article. New articles should follow the same
@@ -2583,6 +2584,101 @@ function agentArticle(): Omit<Article, 'publishedAt'> {
   }
 }
 
+function imageArticle(): Omit<Article, 'publishedAt'> {
+  return {
+    id: 'art-image-gen',
+    title: '文生图：直线把噪声拉成图，字要另算',
+    description: '一张季度信息图的账本。直线怎么把噪声收成柱子，字画在像素里为什么会错，没有参考图时帽子为什么对不上。',
+    updatedAt: now(),
+    blocks: [
+      {
+        id: 'ig-t1',
+        kind: 'text',
+        content:
+          '一张季度图上，三根柱子和「4%」看起来是一次画完的。采样器只管像素。字如果也是像素，步数走完仍可能是错的。\n\n主流的公开框架已经不在像素上跑 U-Net。Stable Diffusion 3 和 FLUX.1 先用自编码器把图压进潜空间，再让 Transformer 从噪声走到图像。SD3 把这条路径训练成直线，叫整流（rectified flow）。FLUX.1 是 120 亿参数的整流 Transformer。',
+      },
+      {
+        id: 'ig-t2',
+        kind: 'text',
+        content:
+          '## 噪声和图像之间是一条直线\n\n这本账本把图像放在 $t = 0$，噪声放在 $t = 1$：\n\n$$\nz_t = (1-t)\\,x + t\\,\\varepsilon\n$$\n\n速度是常数 $v = \\varepsilon - x$。点沿着直线走，欧拉法只要不少于 1 步，终点误差就是 0。弯的轨迹没有这个保证。Stability 写过两件事：直线用的步数更少，训练时把更多权重放在轨迹中段。\n\nFLUX.1 也走整流。schnell 用潜空间对抗蒸馏，模型卡上的例子是 4 步，`guidance_scale` 为 0，文本最长 256，权重是 Apache-2.0。dev 的例子是 50 步、guidance 3.5、边长 1024、文本最长 512，编码器是 CLIP 加 T5。1 到 4 步是蒸馏之后的采样。下面弯路上的偏差是另一本账。',
+      },
+      {
+        id: 'ig-w1',
+        kind: 'widget',
+        type: 'infographic',
+        props: { mode: 'flow', steps: 4, anchor: false },
+      },
+      {
+        id: 'ig-t3',
+        kind: 'text',
+        content:
+          '## 先对两个偏差\n\n先别拖。标题应是直线偏差 0.000，弯路偏差 0.628。芯片上是同一对数字。\n\n弯路是教学曲线 $y = 0.8\\sin(\\pi s)$。$s = 1$ 在噪声，$s = 0$ 在图像。欧拉法用该点的切线走完这一步，切线用 $10^{-4}$ 的差分来估。4 步之后横坐标到了 1，高度还浮着，偏差 0.628。右边写着清晰度 40%。三根柱子的目标是访问 72、付费 18、流失 4，这一步还掺着噪声。\n\n把步数拖到 10。弯路偏差变成 0.251，直线仍是 0.000，清晰度变成 100%。schnell 的 4 步落在蒸馏后的模型上。这里的 0.628 是弯路没走完。',
+      },
+      {
+        id: 'ig-t4',
+        kind: 'text',
+        content:
+          '## 字和图像进同一段注意力\n\nSD3 的 MMDiT 给文本和图像各一套权重，两条序列拼在一起做联合注意力，两个方向都看得到对方。更早的结构把文本编码器冻住，只用交叉注意力把条件送进 U-Net。SD3 的文本侧是 CLIP-L/14、OpenCLIP bigG/14 和 T5-XXL。自编码器是 16 个潜通道。\n\nFLUX 公开管线的文本侧是 CLIP 和 T5。Kontext 的论文写 FLUX.1 的自编码器同样是 16 个潜通道；双流块之后还有 38 个单流块；解码之前，文本 token 会被丢掉。你看见的字形是解码出来的纹理。\n\nIdeogram 4.0 把编码器换成 Qwen3-VL-8B-Instruct，取其中 13 层的隐状态拼起来。后面是 34 层、93 亿参数的单流 DiT。文本和图像从第一层就在同一段自注意力里。它只在结构化 JSON 上训练。',
+      },
+      {
+        id: 'ig-t5',
+        kind: 'text',
+        content:
+          '## 二十个字，最后两个不锁\n\n下面这张卡数 20 个字形。标题 `Q3 +72%` 去掉空格是 Q、3、+、7、2、%，共 6 个。然后每一行先标签、后数值：访问 72%，付费 18%，流失 4%。空格不计数。\n\n规则是账本自己的。清晰度是步数除以 10。清晰度到 1 之前，锁上的个数是清晰度乘 18，再向下取整。到了 1，锁上 18 个。流失那一行的「4」和「%」排在最后，阈值在 1 外面，走完也不锁。这本账本不打 OCR 分。Ideogram 报告他们在 X-Omni 英文 OCR 上是 0.97，那是他们的数。',
+      },
+      {
+        id: 'ig-w2',
+        kind: 'widget',
+        type: 'infographic',
+        props: { mode: 'glyphs', steps: 10, anchor: false },
+      },
+      {
+        id: 'ig-t6',
+        kind: 'text',
+        content:
+          '步数停在 10。标题应是错字 2 / 20。底下写着还没锁上的是「4」「%」。标签「流失」是字，右边两个红框才是那个 4%。柱子用的是同一只清晰度，这一步已经不再掺噪声。字还剩两个。\n\n拖到 5。错字变成 11 / 20。锁上了前 9 个，还剩 11 个没锁上。',
+      },
+      {
+        id: 'ig-t7',
+        kind: 'text',
+        content:
+          '点「字先排」。错字变成 0 / 20。柱子仍按步数从噪声里长。字在第 1 步之前就由字体画出，不进采样。\n\n生产里这是三层，各管各的。像素沿轨迹走。数字必须能核对时，先排版，再叠到图上。模型自己要画出文字时，把字面和框写进条件。Ideogram 的文字元素有字面，另有一段描述写风格。框是 $[y_{\\min}, x_{\\min}, y_{\\max}, x_{\\max}]$，范围 0 到 1000，原点在左上。管线会校验 JSON，解析不了就拒绝。他们说同一份 JSON 跑十次，版式还在，纯文本会漂。字形仍是画进像素的。「字先排」是另一条路：数字用字体，插图交给模型。',
+      },
+      {
+        id: 'ig-t8',
+        kind: 'text',
+        content:
+          '## 同一颗种子只复现这一张\n\n同一句提示、同一颗种子、确定性采样器，得到同一张像素。换一句提示，又不给参考图，主体会重新抽一次。参考图的潜变量留在序列里，帽子可以不再重抽。提示只改一点，身份仍可能丢。\n\n下面三格是三句不同的提示。没有参考时，帽子色相是 210°、28°、130°，半径是 16、22、13。色相差按圆周上的短弧来量，最大是 178°。',
+      },
+      {
+        id: 'ig-w3',
+        kind: 'widget',
+        type: 'infographic',
+        props: { mode: 'cast', steps: 10, anchor: false },
+      },
+      {
+        id: 'ig-t9',
+        kind: 'text',
+        content:
+          '标题应是三顶帽子的色相最大差 178°。芯片是帽色差 178°。\n\n点「有参考」。三顶都是 210°，半径都是 16。变的是背后那条竖纹。色相差 0°。\n\nKontext 用流匹配，把参考图的 token 接在目标 token 后面。他们比较过通道拼接，序列拼接更好。KontextBench 有 1,026 对，来自 108 张图：局部编辑 416，全局 262，文字编辑 92，风格参考 63，角色参考 193。论文记下两种失手：提示只改一点，身份仍可能丢；连续改六次，会出现瑕疵。参考是条件。\n\n更早的一条路是 IP-Adapter。图像编码器出一个向量，再加一层交叉注意力。Kontext 把参考图的潜变量接进序列。',
+      },
+      {
+        id: 'ig-t10',
+        kind: 'text',
+        content:
+          '回到那三根柱子。直线可以把它们从噪声里拉出来：步数从 4 加到 10，弯路偏差从 0.628 收到 0.251，直线一直是 0.000。同一张卡上，画在像素里的「4%」到第 10 步还是两个红框。字先排之后，错字是 0，柱子照样在长。想换掉背景、留下那顶帽子，第一张图的 token 得留在序列里。\n\n下次看见一张带数字的信息图，可以先问那几个数字是在像素里采样的，还是字体画上去的。再问那个人是这一句提示的一颗种子，还是另一张图的 token 还在序列里。',
+      },
+      {
+        id: 'ig-t11',
+        kind: 'text',
+        content:
+          '---\n\n**来源**：Stability《Stable Diffusion 3》与 Hugging Face《Diffusers welcomes Stable Diffusion 3》· Black Forest Labs《Announcing Black Forest Labs》（2024-08-01）· FLUX.1-schnell / FLUX.1-dev 模型卡 · Black Forest Labs 等《FLUX.1 Kontext》（arXiv:2506.15742）· Ideogram《Ideogram 4.0》· Ye 等《IP-Adapter》。查阅日期 2026-10-10。\n\n给专业人士：账本是教学模型。弯路是 $y = 0.8\\sin(\\pi s)$，欧拉步用 $10^{-4}$ 的切线差分，4 步偏差 0.628、10 步 0.251，和 schnell 的蒸馏步数无关。20 个字形按标题去空格、再按行先标签后数值排列。清晰度 $c$ 未到 1 时锁 $\\lfloor c \\times 18 \\rfloor$ 个，到 1 锁 18 个，流失行的 4 和 % 不锁。「字先排」从第 1 步起用字体画全部 20 个字，柱子仍去噪。Ideogram 仍把字形画进像素，条件是 JSON 里的字面和框。帽子色相 210°、28°、130°，无参考时最大圆周差 178°；有参考时三格都是 210°、半径 16，只移动竖纹。',
+      },
+    ],
+  }
+}
+
 export function seedArticles(): Article[] {
   return [
     pendulumArticle(),
@@ -2606,5 +2702,6 @@ export function seedArticles(): Article[] {
     imageCompressionArticle(),
     opusArticle(),
     agentArticle(),
+    imageArticle(),
   ].map((a) => ({ ...a, publishedAt: RELEASE_DATES[a.id] ?? a.updatedAt }))
 }
