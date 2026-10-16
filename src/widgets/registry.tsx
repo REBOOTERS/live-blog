@@ -32,6 +32,7 @@ import { JpegQualityWidget } from './JpegQualityWidget'
 import { OpusSessionWidget } from './OpusSessionWidget'
 import { AgentLoopWidget } from './AgentLoopWidget'
 import { InfographicWidget } from './InfographicWidget'
+import { HallwayWidget } from './HallwayWidget'
 
 // ---- Config field schema (drives the editor's property panel) ----
 
@@ -99,6 +100,7 @@ const registry: Record<string, WidgetDefinition<any>> = {
   'opus-session': OpusSessionWidget,
   'agent-loop': AgentLoopWidget,
   infographic: InfographicWidget,
+  hallway: HallwayWidget,
 }
 
 export function getWidget(type: string): WidgetDefinition<any> | undefined {
