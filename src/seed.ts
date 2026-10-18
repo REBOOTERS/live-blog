@@ -2865,8 +2865,27 @@ function rlArticle(): Omit<Article, 'publishedAt'> {
   }
 }
 
+type ArticleFile = {
+  publishedAt?: string
+  article?: () => Omit<Article, 'publishedAt'>
+}
+
+// 新文章放 src/articles/<id>.ts，导出 publishedAt 和 article()。
+// 不要把它们再写进下面的数组，两篇稿才不会改到同一行。
+const articleFiles = import.meta.glob('./articles/*.ts', { eager: true }) as Record<string, ArticleFile>
+
+function articlesFromFiles(): Article[] {
+  const out: Article[] = []
+  for (const mod of Object.values(articleFiles)) {
+    if (typeof mod.publishedAt !== 'string' || typeof mod.article !== 'function') continue
+    out.push({ ...mod.article(), publishedAt: mod.publishedAt })
+  }
+  out.sort((a, b) => a.publishedAt.localeCompare(b.publishedAt) || a.id.localeCompare(b.id))
+  return out
+}
+
 export function seedArticles(): Article[] {
-  return [
+  const builtIn = [
     pendulumArticle(),
     bezierArticle(),
     sortArticle(),
@@ -2892,4 +2911,6 @@ export function seedArticles(): Article[] {
     vpnArticle(),
     rlArticle(),
   ].map((a) => ({ ...a, publishedAt: RELEASE_DATES[a.id] ?? a.updatedAt }))
+  const seen = new Set(builtIn.map((a) => a.id))
+  return [...builtIn, ...articlesFromFiles().filter((a) => !seen.has(a.id))]
 }
