@@ -105,6 +105,22 @@ const registry: Record<string, WidgetDefinition<any>> = {
   hallway: HallwayWidget,
 }
 
+// 新组件只放文件。这里扫一遍，已经写进上面名单的不覆盖，避免两个人同时改这一份对象。
+const discovered = import.meta.glob('./*Widget.tsx', { eager: true }) as Record<string, Record<string, unknown>>
+
+function isWidgetDefinition(value: unknown): value is WidgetDefinition {
+  if (!value || typeof value !== 'object') return false
+  const widget = value as Partial<WidgetDefinition>
+  return typeof widget.type === 'string' && typeof widget.label === 'string' && typeof widget.Component === 'function'
+}
+
+for (const mod of Object.values(discovered)) {
+  for (const value of Object.values(mod)) {
+    if (!isWidgetDefinition(value) || registry[value.type]) continue
+    registry[value.type] = value
+  }
+}
+
 export function getWidget(type: string): WidgetDefinition<any> | undefined {
   return registry[type]
 }
