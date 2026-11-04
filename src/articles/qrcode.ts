@@ -7,7 +7,7 @@ export function article(): Omit<Article, 'publishedAt'> {
     id: 'art-qrcode',
     title: '二维码：三个角钉住方向，多出来的码字用来扛脏',
     description:
-      '版本 1 是 21×21。字节模式 L 级最多 17 字节：数据码字 19，纠错码字 7。损坏 8% 时 L 级仍可恢复，拖到 20% 要换 M 或认扫失败。',
+      '版本 1 是 21×21。字节模式 L 级最多 17 字节：数据码字 19，纠错码字 7。损坏 5% 时 L 级仍可恢复，8% 要换级或认扫失败。',
     updatedAt: new Date().toISOString(),
     blocks: [
       {
