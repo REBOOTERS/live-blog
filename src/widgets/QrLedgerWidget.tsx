@@ -28,9 +28,9 @@ interface QrLedgerProps {
 }
 
 const MODES: { id: QrMode; label: string }[] = [
-  { id: 'frame', label: '寻像' },
-  { id: 'bytes', label: '装载' },
-  { id: 'damage', label: '纠错' },
+  { id: 'frame', label: '三个角' },
+  { id: 'bytes', label: '能写多少' },
+  { id: 'damage', label: '弄脏' },
 ]
 
 const ECS: { id: EcLevel; label: string }[] = [
@@ -93,23 +93,25 @@ export function canRecover(damagePct: number, ec: EcLevel): boolean {
 
 export function frameHeadline(version: number): string {
   const m = modulesFor(version)
-  return `版本 ${clampVersion(version)} 是 ${m}×${m}。三个寻像图案钉在角上，扫的时候靠它们认方向。`
+  return `${clampVersion(version)} 号图是 ${m}×${m} 格。三个角上的大方框先告诉手机哪边朝上。`
 }
 
 export function bytesHeadline(bytes: number, ec: EcLevel): string {
   const n = clampBytes(bytes)
   const cap = V1_BYTE_CAP[ec]
-  if (n === 0) return `版本 1-${ec} 字节模式最多 ${cap} 字节。现在还没装东西。`
-  if (n <= cap) return `${n} 字节装进版本 1-${ec}。数据码字 ${V1_DATA[ec]}，纠错码字 ${V1_EC[ec]}，还空 ${cap - n} 字节。`
-  return `${n} 字节装不进版本 1-${ec}。这一级最多 ${cap} 字节，多出来的要升版本或降纠错。`
+  if (n === 0) return `1 号图的 ${ec} 档最多大约 ${cap} 个字节。现在还没写字。`
+  if (n <= cap) {
+    return `${n} 个字节放进 1 号图的 ${ec} 档。写字段 ${V1_DATA[ec]}，补丁段 ${V1_EC[ec]}，还空 ${cap - n} 个字节。`
+  }
+  return `${n} 个字节放不进 1 号图的 ${ec} 档。这一档最多 ${cap} 个字节，多出来的要换更大号，或改用补丁更少的档。`
 }
 
 export function damageHeadline(damagePct: number, ec: EcLevel): string {
   const d = clampDamage(damagePct)
   const limit = EC_PCT[ec]
-  if (d === 0) return `没损坏。${ec} 级名义上能扛大约 ${limit}% 的码字损伤。`
-  if (d <= limit) return `损坏 ${d}%。${ec} 级上限大约 ${limit}%，账本记作仍可恢复。`
-  return `损坏 ${d}%。超过 ${ec} 级大约 ${limit}% 的上限，账本记作扫不出来。`
+  if (d === 0) return `还没弄脏。${ec} 档名义上大约能扛 ${limit}% 的损伤。`
+  if (d <= limit) return `弄脏 ${d}%。${ec} 档上限大约 ${limit}%，账本记作还能读。`
+  return `弄脏 ${d}%。超过 ${ec} 档大约 ${limit}% 的上限，账本记作扫不出来。`
 }
 
 function headline(props: QrLedgerProps): string {
@@ -122,14 +124,14 @@ function detail(props: QrLedgerProps): string {
   if (props.mode === 'bytes') {
     const data = V1_DATA[props.ec]
     const ecw = V1_EC[props.ec]
-    return `版本 1 一共 ${V1_TOTAL} 个码字 = 数据 ${data} + 纠错 ${ecw}。字节模式先写 4 bit 模式、8 bit 长度，再写正文。容量 ${V1_BYTE_CAP[props.ec]} 已扣掉这些开销。`
+    return `1 号图一共 ${V1_TOTAL} 小段 = 写字 ${data} + 补丁 ${ecw}。开头还要占一点地方说明模式和长度，所以正文上限是 ${V1_BYTE_CAP[props.ec]} 个字节，不是 ${data}。`
   }
   if (props.mode === 'damage') {
     const t = ecCorrectable(props.ec)
-    return `Reed-Solomon 纠错码字 ${V1_EC[props.ec]} 个，大约能纠正 t = ⌊${V1_EC[props.ec]}/2⌋ = ${t} 个码字错误。名义百分比 ${EC_PCT[props.ec]}% 是规格宣传值，不是像素级实测。`
+    return `补丁段 ${V1_EC[props.ec]} 个，大约能修好 t = ⌊${V1_EC[props.ec]}/2⌋ = ${t} 段。外面说的 ${EC_PCT[props.ec]}% 是圆整宣传值，不是拿尺子量画面面积。`
   }
   const m = modulesFor(props.version)
-  return `边长 modules = 21 + 4 × (version − 1) = ${m}。每个寻像是 7×7 的回字形。静区至少 4 个模块宽，账本画在格子外的留白里。`
+  return `一边格数 = 21 + 4 × (号 − 1) = ${m}。角上每个大方框是 7×7。最外面留白，免得旁边的印刷挤进来。`
 }
 
 function QrLedger({ props }: { props: QrLedgerProps }) {
@@ -154,17 +156,17 @@ function QrLedger({ props }: { props: QrLedgerProps }) {
   const chips =
     mode === 'bytes'
       ? [
-          `数据 ${V1_DATA[ec]}`,
-          `纠错 ${V1_EC[ec]}`,
-          canFit(bytes, ec) ? `容量 ${V1_BYTE_CAP[ec]}` : `超出 ${bytes - V1_BYTE_CAP[ec]}`,
+          `写字段 ${V1_DATA[ec]}`,
+          `补丁 ${V1_EC[ec]}`,
+          canFit(bytes, ec) ? `上限 ${V1_BYTE_CAP[ec]}` : `超出 ${bytes - V1_BYTE_CAP[ec]}`,
         ]
       : mode === 'damage'
         ? [
             `${ec} · ${EC_PCT[ec]}%`,
             `t = ${ecCorrectable(ec)}`,
-            canRecover(damagePct, ec) ? '可恢复' : '扫失败',
+            canRecover(damagePct, ec) ? '还能读' : '扫失败',
           ]
-        : [`${modulesFor(version)}×${modulesFor(version)}`, `版本 ${version}`, '寻像 ×3']
+        : [`${modulesFor(version)}×${modulesFor(version)}`, `${version} 号`, '角标 ×3']
 
   return (
     <div className="lb-surface">
@@ -203,7 +205,7 @@ function QrLedger({ props }: { props: QrLedgerProps }) {
       <div className="mt-3 space-y-2">
         {mode === 'frame' ? (
           <Slider
-            label="版本"
+            label="几号"
             value={version}
             min={1}
             max={6}
@@ -225,7 +227,7 @@ function QrLedger({ props }: { props: QrLedgerProps }) {
         ) : null}
         {mode === 'damage' ? (
           <Slider
-            label="损坏"
+            label="弄脏"
             value={damagePct}
             min={0}
             max={40}
@@ -308,7 +310,7 @@ function QrCanvas({ theme, view }: { theme: string; view: QrLedgerProps }) {
 
 function drawFrame(ctx: CanvasRenderingContext2D, P: CanvasPalette, version: number) {
   const n = modulesFor(version)
-  note(ctx, P, '黑白格子叫模块。三个角的回字是寻像图案，扫码器先找它们。')
+  note(ctx, P, '每一小格非黑即白。三个角的大方框，手机先拿它们认方向。')
   const origin = paintMatrix(ctx, P, n, (r, c) => {
     if (inFinder(r, c, n)) return finderColor(r, c, n)
     if (r === 6 || c === 6) return (r + c) % 2 === 0
@@ -316,11 +318,11 @@ function drawFrame(ctx: CanvasRenderingContext2D, P: CanvasPalette, version: num
     if (r > 7 && c > 7) return ((r * 17 + c * 13 + version * 3) % 5) < 2
     return false
   })
-  label(ctx, P, `静区`, origin.x - 4, origin.y + origin.size + 22, P.faint)
+  label(ctx, P, `外圈留白`, origin.x - 4, origin.y + origin.size + 22, P.faint)
   legend(ctx, P, [
-    { color: P.text, text: '寻像 7×7' },
-    { color: P.accent, text: '时序线' },
-    { color: P.muted, text: '数据区（示意）' },
+    { color: P.text, text: '角上大方框 7×7' },
+    { color: P.accent, text: '对格细线' },
+    { color: P.muted, text: '中间写字区（示意）' },
   ])
   // 标注三个角
   badge(ctx, P, origin.x + 3.5 * origin.cell, origin.y + 3.5 * origin.cell, 'TL')
@@ -329,7 +331,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, P: CanvasPalette, version: num
 }
 
 function drawBytes(ctx: CanvasRenderingContext2D, P: CanvasPalette, bytes: number, ec: EcLevel) {
-  note(ctx, P, '左边是版本 1 的码字账。右边看装了多少字节、还剩多少。')
+  note(ctx, P, '左边是 1 号图怎么切段。右边看正文写了多少、还剩多少。')
   const data = V1_DATA[ec]
   const ecw = V1_EC[ec]
   const cap = V1_BYTE_CAP[ec]
@@ -337,11 +339,11 @@ function drawBytes(ctx: CanvasRenderingContext2D, P: CanvasPalette, bytes: numbe
   const fit = n <= cap
 
   const rows = [
-    { name: '总码字', value: `${V1_TOTAL}`, tip: '版本 1 固定', hot: false },
-    { name: '数据码字', value: `${data}`, tip: `${ec} 级`, hot: false },
-    { name: '纠错码字', value: `${ecw}`, tip: `可纠 t=${ecCorrectable(ec)}`, hot: false },
+    { name: '总共几段', value: `${V1_TOTAL}`, tip: '1 号固定', hot: false },
+    { name: '写字段', value: `${data}`, tip: `${ec} 档`, hot: false },
+    { name: '补丁段', value: `${ecw}`, tip: `大约修好 t=${ecCorrectable(ec)}`, hot: false },
     {
-      name: '字节载荷',
+      name: '正文字节',
       value: `${n} / ${cap}`,
       tip: fit ? `还空 ${cap - n}` : `超出 ${n - cap}`,
       hot: true,
@@ -379,7 +381,7 @@ function drawBytes(ctx: CanvasRenderingContext2D, P: CanvasPalette, bytes: numbe
   ctx.textAlign = 'left'
   ctx.fillStyle = P.faint
   ctx.font = '13px ui-sans-serif, system-ui, sans-serif'
-  ctx.fillText(`版本 1-${ec} 字节容量`, 380, 104)
+  ctx.fillText(`1 号图 · ${ec} 档能写多少`, 380, 104)
 
   const barX = 390
   const barY = 140
@@ -403,10 +405,10 @@ function drawBytes(ctx: CanvasRenderingContext2D, P: CanvasPalette, bytes: numbe
   ctx.fillText(`/ ${cap} 字节`, 470, 232)
   ctx.fillStyle = fit ? P.good : P.danger
   ctx.font = '14px ui-sans-serif, system-ui, sans-serif'
-  ctx.fillText(fit ? '装得下' : '装不下', 470, 270)
+  ctx.fillText(fit ? '写得下' : '写不下', 470, 270)
   ctx.fillStyle = P.faint
   ctx.font = '12px ui-sans-serif, system-ui, sans-serif'
-  ctx.fillText(`纠错占 ${ecw}/${V1_TOTAL} 码字`, 470, 310)
+  ctx.fillText(`补丁占 ${ecw}/${V1_TOTAL} 段`, 470, 310)
 }
 
 function drawDamage(ctx: CanvasRenderingContext2D, P: CanvasPalette, damagePct: number, ec: EcLevel) {
@@ -416,8 +418,8 @@ function drawDamage(ctx: CanvasRenderingContext2D, P: CanvasPalette, damagePct: 
     ctx,
     P,
     ok
-      ? `损坏画成打叉的模块。${ec} 级名义上限 ${EC_PCT[ec]}%，这一档还在范围内。`
-      : `损坏超过 ${ec} 级大约 ${EC_PCT[ec]}%。寻像还在，正文已经拼不回来。`,
+      ? `弄脏的格子打了叉。${ec} 档名义上限 ${EC_PCT[ec]}%，这一档还在范围内。`
+      : `弄脏超过 ${ec} 档大约 ${EC_PCT[ec]}%。角还在，中间的字已经拼不回来。`,
   )
 
   const n = 21
@@ -440,17 +442,17 @@ function drawDamage(ctx: CanvasRenderingContext2D, P: CanvasPalette, damagePct: 
   ctx.textBaseline = 'middle'
   ctx.fillStyle = P.faint
   ctx.font = '13px ui-sans-serif, system-ui, sans-serif'
-  ctx.fillText('纠错账', 450, 120)
+  ctx.fillText('弄脏之后', 450, 120)
   ctx.fillStyle = P.text
   ctx.font = '15px ui-sans-serif, system-ui, sans-serif'
-  ctx.fillText(`${ec} 级`, 450, 156)
+  ctx.fillText(`${ec} 档`, 450, 156)
   ctx.font = '28px ui-monospace, monospace'
   ctx.fillStyle = ok ? P.good : P.danger
   ctx.fillText(`${d}%`, 450, 200)
   ctx.fillStyle = P.muted
   ctx.font = '13px ui-sans-serif, system-ui, sans-serif'
   ctx.fillText(`上限约 ${EC_PCT[ec]}%`, 450, 240)
-  ctx.fillText(`t = ${ecCorrectable(ec)} 码字`, 450, 268)
+  ctx.fillText(`大约修好 t = ${ecCorrectable(ec)} 段`, 450, 268)
 }
 
 function isDamaged(r: number, c: number, damagePct: number): boolean {
@@ -580,7 +582,7 @@ function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h
 export const QrLedgerWidget: WidgetDefinition<QrLedgerProps> = {
   type: 'qr-ledger',
   label: '二维码账本',
-  description: '边长随版本加 4。版本 1 的 26 个码字拆成数据和纠错。损坏超过 L/M/Q/H 的名义比例就扫不出来。',
+  description: '一边格数随号加 4。1 号图 26 小段拆成写字和补丁。弄脏超过 L/M/Q/H 名义比例就扫不出来。',
   icon: '▦',
   defaultProps: { mode: 'frame', version: 1, ec: 'L', bytes: 5, damagePct: 0 },
   configSchema: [
@@ -590,15 +592,15 @@ export const QrLedgerWidget: WidgetDefinition<QrLedgerProps> = {
       type: 'select',
       options: MODES.map((m) => ({ value: m.id, label: m.label })),
     },
-    { key: 'version', label: '版本', type: 'range', min: 1, max: 6, step: 1 },
+    { key: 'version', label: '几号', type: 'range', min: 1, max: 6, step: 1 },
     {
       key: 'ec',
-      label: '纠错级',
+      label: '耐脏档',
       type: 'select',
       options: ECS.map((e) => ({ value: e.id, label: e.label })),
     },
     { key: 'bytes', label: '字节', type: 'range', min: 0, max: 20, step: 1 },
-    { key: 'damagePct', label: '损坏 %', type: 'range', min: 0, max: 40, step: 1 },
+    { key: 'damagePct', label: '弄脏 %', type: 'range', min: 0, max: 40, step: 1 },
   ],
   Component: QrLedger,
 }
